@@ -5,6 +5,7 @@
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::error;
+use std::future::Future;
 use std::time::Duration;
 
 use futures::channel::oneshot;
@@ -388,15 +389,13 @@ pub struct ConnTx {
 }
 
 impl ConnTx {
-    pub async fn send<C>(&self, cmd: C) -> Result<C::Reply, Error>
+    async fn finish_send<C>(
+        rx: oneshot::Receiver<PendingReply<Result<Data, String>>>,
+    ) -> Result<C::Reply, Error>
     where
-        C: Command + Into<Data>,
+        C: Command,
         C::Reply: TryFrom<Data>,
     {
-        let (tx, rx) = oneshot::channel();
-        self.event_tx
-            .send(Event::SendCmd(cmd.into(), tx))
-            .map_err(|_| Error::ConnectionClosed)?;
         let pending_reply = rx
             .await
             // This should only happen if something goes wrong during encoding
@@ -412,6 +411,27 @@ impl ConnTx {
             })?
             .map_err(Error::Euph)?;
         data.try_into().map_err(|_| Error::IncorrectReplyType)
+    }
+
+    /// Send a command to the server.
+    ///
+    /// Returns a future containing the server's reply. This future does not
+    /// have to be awaited and can be safely ignored if you are not interested
+    /// in the reply.
+    ///
+    /// This function may return before the command was sent. To ensure that it
+    /// was sent, await the returned future first.
+    ///
+    /// When called multiple times, this function guarantees that the commands
+    /// are sent in the order that the function is called.
+    pub fn send<C>(&self, cmd: C) -> impl Future<Output = Result<C::Reply, Error>>
+    where
+        C: Command + Into<Data>,
+        C::Reply: TryFrom<Data>,
+    {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.event_tx.send(Event::SendCmd(cmd.into(), tx));
+        Self::finish_send::<C>(rx)
     }
 
     pub async fn status(&self) -> Result<Status, Error> {
