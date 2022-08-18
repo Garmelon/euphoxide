@@ -17,7 +17,7 @@
 pub mod api;
 pub mod conn;
 mod huehash;
-pub mod replies;
+mod replies;
 
 pub use conn::wrap;
 pub use huehash::nick_hue;
