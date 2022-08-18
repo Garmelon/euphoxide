@@ -15,3 +15,6 @@ tokio = { version = "1.20.1", features = ["time", "sync", "macros", "rt"] }
 [dependencies.tokio-tungstenite]
 version = "0.17.2"
 features = ["rustls-tls-native-roots"]
+
+[dev-dependencies]
+tokio = { version = "1.20.1", features = ["rt-multi-thread"] }
