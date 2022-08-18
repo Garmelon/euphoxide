@@ -11,7 +11,6 @@ use std::time::Duration;
 use futures::channel::oneshot;
 use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
-use rand::Rng;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 use tokio::{select, task, time};
@@ -171,7 +170,7 @@ struct State {
 
     packet_tx: mpsc::UnboundedSender<Data>,
 
-    last_ws_ping: Option<Vec<u8>>,
+    last_ws_ping: Option<u64>,
     last_ws_pong: Option<Vec<u8>>,
     last_euph_ping: Option<Time>,
     last_euph_pong: Option<Time>,
@@ -353,16 +352,17 @@ impl State {
 
     async fn do_pings(&mut self, event_tx: &mpsc::UnboundedSender<Event>) -> InternalResult<()> {
         // Check old ws ping
-        if self.last_ws_ping.is_some() && self.last_ws_ping != self.last_ws_pong {
+        let last_ws_ping_bytes = self.last_ws_ping.map(|n| n.to_be_bytes().to_vec());
+        if self.last_ws_ping.is_some() && last_ws_ping_bytes != self.last_ws_pong {
             return Err("server missed ws ping".into());
         }
 
         // Send new ws ping
-        let mut ws_payload = [0_u8; 8];
-        rand::thread_rng().fill(&mut ws_payload);
-        self.last_ws_ping = Some(ws_payload.to_vec());
+        let ws_ping = self.last_ws_ping.unwrap_or_default().wrapping_add(1);
+        let ws_ping_bytes = ws_ping.to_be_bytes().to_vec();
+        self.last_ws_ping = Some(ws_ping);
         self.ws_tx
-            .send(tungstenite::Message::Ping(ws_payload.to_vec()))
+            .send(tungstenite::Message::Ping(ws_ping_bytes))
             .await?;
 
         // Check old euph ping
