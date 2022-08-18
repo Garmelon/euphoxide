@@ -17,13 +17,12 @@ use tokio::sync::mpsc;
 use tokio::{select, task, time};
 use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 
-use crate::replies::{self, PendingReply, Replies};
-
-use super::api::packet::{Command, Packet, ParsedPacket};
-use super::api::{
+use crate::api::packet::{Command, Packet, ParsedPacket};
+use crate::api::{
     BounceEvent, Data, HelloEvent, PersonalAccountView, Ping, PingReply, SessionView,
     SnapshotEvent, Time, UserId,
 };
+use crate::replies::{self, PendingReply, Replies};
 
 pub type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
