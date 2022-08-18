@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.62" # TODO Remove
 futures = "0.3.23"
 rand = "0.8.5"
 serde = { version = "1.0.143", features = ["derive"] }

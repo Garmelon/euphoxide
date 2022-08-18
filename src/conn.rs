@@ -4,9 +4,9 @@
 
 use std::collections::HashMap;
 use std::convert::Infallible;
+use std::error;
 use std::time::Duration;
 
-use anyhow::bail;
 use futures::channel::oneshot;
 use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
@@ -42,6 +42,8 @@ pub enum Error {
     Euph(String),
 }
 
+type InternalResult<T> = Result<T, Box<dyn error::Error>>;
+
 #[derive(Debug)]
 enum Event {
     Message(tungstenite::Message),
@@ -72,18 +74,18 @@ pub struct Joining {
 }
 
 impl Joining {
-    fn on_data(&mut self, data: &Data) -> anyhow::Result<()> {
+    fn on_data(&mut self, data: &Data) -> InternalResult<()> {
         match data {
             Data::BounceEvent(p) => self.bounce = Some(p.clone()),
             Data::HelloEvent(p) => self.hello = Some(p.clone()),
             Data::SnapshotEvent(p) => self.snapshot = Some(p.clone()),
-            d @ (Data::JoinEvent(_)
+            Data::JoinEvent(_)
             | Data::NetworkEvent(_)
             | Data::NickEvent(_)
             | Data::EditMessageEvent(_)
             | Data::PartEvent(_)
             | Data::PmInitiateEvent(_)
-            | Data::SendEvent(_)) => bail!("unexpected {}", d.packet_type()),
+            | Data::SendEvent(_) => return Err("unexpected packet type".into()),
             _ => {}
         }
         Ok(())
@@ -211,14 +213,14 @@ impl State {
     async fn listen(
         ws_rx: &mut SplitStream<WsStream>,
         event_tx: &mpsc::UnboundedSender<Event>,
-    ) -> anyhow::Result<()> {
+    ) -> InternalResult<()> {
         while let Some(msg) = ws_rx.next().await {
             event_tx.send(Event::Message(msg?))?;
         }
         Ok(())
     }
 
-    async fn send_ping_events(event_tx: &mpsc::UnboundedSender<Event>) -> anyhow::Result<()> {
+    async fn send_ping_events(event_tx: &mpsc::UnboundedSender<Event>) -> InternalResult<()> {
         loop {
             event_tx.send(Event::DoPings)?;
             time::sleep(TIMEOUT).await;
@@ -229,7 +231,7 @@ impl State {
         &mut self,
         event_tx: &mpsc::UnboundedSender<Event>,
         event_rx: &mut mpsc::UnboundedReceiver<Event>,
-    ) -> anyhow::Result<()> {
+    ) -> InternalResult<()> {
         while let Some(ev) = event_rx.recv().await {
             self.replies.purge();
             match ev {
@@ -247,10 +249,10 @@ impl State {
         &mut self,
         msg: tungstenite::Message,
         event_tx: &mpsc::UnboundedSender<Event>,
-    ) -> anyhow::Result<()> {
+    ) -> InternalResult<()> {
         match msg {
             tungstenite::Message::Text(t) => self.on_packet(serde_json::from_str(&t)?, event_tx)?,
-            tungstenite::Message::Binary(_) => bail!("unexpected binary message"),
+            tungstenite::Message::Binary(_) => return Err("unexpected binary message".into()),
             tungstenite::Message::Ping(_) => {}
             tungstenite::Message::Pong(p) => self.last_ws_pong = Some(p),
             tungstenite::Message::Close(_) => {}
@@ -263,7 +265,7 @@ impl State {
         &mut self,
         packet: Packet,
         event_tx: &mpsc::UnboundedSender<Event>,
-    ) -> anyhow::Result<()> {
+    ) -> InternalResult<()> {
         let packet = ParsedPacket::from_packet(packet)?;
 
         // Complete pending replies if the packet has an id
@@ -309,7 +311,7 @@ impl State {
         &mut self,
         data: Data,
         reply_tx: oneshot::Sender<PendingReply<Result<Data, String>>>,
-    ) -> anyhow::Result<()> {
+    ) -> InternalResult<()> {
         // Overkill of universe-heat-death-like proportions
         self.last_id = self.last_id.wrapping_add(1);
         let id = format!("{}", self.last_id);
@@ -330,7 +332,7 @@ impl State {
         Ok(())
     }
 
-    async fn on_send_rpl(&mut self, id: Option<String>, data: Data) -> anyhow::Result<()> {
+    async fn on_send_rpl(&mut self, id: Option<String>, data: Data) -> InternalResult<()> {
         let packet = ParsedPacket {
             id,
             r#type: data.packet_type(),
@@ -349,10 +351,10 @@ impl State {
         let _ = reply_tx.send(self.status.clone());
     }
 
-    async fn do_pings(&mut self, event_tx: &mpsc::UnboundedSender<Event>) -> anyhow::Result<()> {
+    async fn do_pings(&mut self, event_tx: &mpsc::UnboundedSender<Event>) -> InternalResult<()> {
         // Check old ws ping
         if self.last_ws_ping.is_some() && self.last_ws_ping != self.last_ws_pong {
-            bail!("server missed ws ping")
+            return Err("server missed ws ping".into());
         }
 
         // Send new ws ping
@@ -365,7 +367,7 @@ impl State {
 
         // Check old euph ping
         if self.last_euph_ping.is_some() && self.last_euph_ping != self.last_euph_pong {
-            bail!("server missed euph ping")
+            return Err("server missed euph ping".into());
         }
 
         // Send new euph ping
