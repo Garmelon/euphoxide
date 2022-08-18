@@ -10,7 +10,6 @@ use anyhow::bail;
 use futures::channel::oneshot;
 use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
-use log::warn;
 use rand::Rng;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
@@ -353,7 +352,6 @@ impl State {
     async fn do_pings(&mut self, event_tx: &mpsc::UnboundedSender<Event>) -> anyhow::Result<()> {
         // Check old ws ping
         if self.last_ws_ping.is_some() && self.last_ws_ping != self.last_ws_pong {
-            warn!("server missed ws ping");
             bail!("server missed ws ping")
         }
 
@@ -367,7 +365,6 @@ impl State {
 
         // Check old euph ping
         if self.last_euph_ping.is_some() && self.last_euph_ping != self.last_euph_pong {
-            warn!("server missed euph ping");
             bail!("server missed euph ping")
         }
 
