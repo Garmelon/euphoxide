@@ -170,6 +170,7 @@ struct State {
 
     packet_tx: mpsc::UnboundedSender<Data>,
 
+    // TODO An arbitrary pong frame may be sent unsolicited
     last_ws_ping: Option<u64>,
     last_ws_pong: Option<Vec<u8>>,
     last_euph_ping: Option<Time>,
