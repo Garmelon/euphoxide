@@ -170,9 +170,13 @@ struct State {
 
     packet_tx: mpsc::UnboundedSender<Data>,
 
-    // TODO An arbitrary pong frame may be sent unsolicited
-    last_ws_ping: Option<u64>,
-    last_ws_pong: Option<Vec<u8>>,
+    // The server may send a pong frame with arbitrary payload unprompted at any
+    // time (see RFC 6455 5.5.3). Because of this, we can't just remember the
+    // last pong payload.
+    ws_ping_counter: u64,
+    last_ws_ping: Option<Vec<u8>>,
+    last_ws_ping_replied_to: bool,
+
     last_euph_ping: Option<Time>,
     last_euph_pong: Option<Time>,
 
@@ -194,8 +198,9 @@ impl State {
             last_id: 0,
             replies: Replies::new(TIMEOUT),
             packet_tx,
+            ws_ping_counter: 0,
             last_ws_ping: None,
-            last_ws_pong: None,
+            last_ws_ping_replied_to: false,
             last_euph_ping: None,
             last_euph_pong: None,
             status: Status::Joining(Joining::default()),
@@ -254,7 +259,11 @@ impl State {
             tungstenite::Message::Text(t) => self.on_packet(serde_json::from_str(&t)?, event_tx)?,
             tungstenite::Message::Binary(_) => return Err("unexpected binary message".into()),
             tungstenite::Message::Ping(_) => {}
-            tungstenite::Message::Pong(p) => self.last_ws_pong = Some(p),
+            tungstenite::Message::Pong(p) => {
+                if self.last_ws_ping == Some(p) {
+                    self.last_ws_ping_replied_to = true;
+                }
+            }
             tungstenite::Message::Close(_) => {}
             tungstenite::Message::Frame(_) => {}
         }
@@ -353,17 +362,17 @@ impl State {
 
     async fn do_pings(&mut self, event_tx: &mpsc::UnboundedSender<Event>) -> InternalResult<()> {
         // Check old ws ping
-        let last_ws_ping_bytes = self.last_ws_ping.map(|n| n.to_be_bytes().to_vec());
-        if self.last_ws_ping.is_some() && last_ws_ping_bytes != self.last_ws_pong {
+        if self.last_ws_ping.is_some() && !self.last_ws_ping_replied_to {
             return Err("server missed ws ping".into());
         }
 
         // Send new ws ping
-        let ws_ping = self.last_ws_ping.unwrap_or_default().wrapping_add(1);
-        let ws_ping_bytes = ws_ping.to_be_bytes().to_vec();
-        self.last_ws_ping = Some(ws_ping);
+        let ws_payload = self.ws_ping_counter.to_be_bytes().to_vec();
+        self.ws_ping_counter = self.ws_ping_counter.wrapping_add(1);
+        self.last_ws_ping = Some(ws_payload.clone());
+        self.last_ws_ping_replied_to = false;
         self.ws_tx
-            .send(tungstenite::Message::Ping(ws_ping_bytes))
+            .send(tungstenite::Message::Ping(ws_payload))
             .await?;
 
         // Check old euph ping
