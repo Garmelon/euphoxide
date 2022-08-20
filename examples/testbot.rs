@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
     let (ws, _) = tokio_tungstenite::connect_async(URI).await?;
-    let (tx, mut rx) = euphoxide::conn::wrap(ws);
+    let (tx, mut rx) = euphoxide::conn::wrap(ws, Duration::from_secs(30));
     while let Some(packet) = rx.recv().await {
         let data = match packet.content {
             Ok(data) => data,
