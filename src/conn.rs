@@ -46,17 +46,14 @@ type InternalResult<T> = Result<T, Box<dyn error::Error>>;
 #[derive(Debug)]
 enum Event {
     Message(tungstenite::Message),
-    SendCmd(Data, oneshot::Sender<PendingReply<Result<Data, String>>>),
+    SendCmd(Data, oneshot::Sender<PendingReply<ParsedPacket>>),
     SendRpl(Option<String>, Data),
     Status(oneshot::Sender<Status>),
     DoPings,
 }
 
 impl Event {
-    fn send_cmd<C: Into<Data>>(
-        cmd: C,
-        rpl: oneshot::Sender<PendingReply<Result<Data, String>>>,
-    ) -> Self {
+    fn send_cmd<C: Into<Data>>(cmd: C, rpl: oneshot::Sender<PendingReply<ParsedPacket>>) -> Self {
         Self::SendCmd(cmd.into(), rpl)
     }
 
@@ -166,9 +163,9 @@ pub enum Status {
 struct State {
     ws_tx: SplitSink<WsStream, tungstenite::Message>,
     last_id: usize,
-    replies: Replies<String, Result<Data, String>>,
+    replies: Replies<String, ParsedPacket>,
 
-    packet_tx: mpsc::UnboundedSender<Data>,
+    packet_tx: mpsc::UnboundedSender<ParsedPacket>,
 
     // The server may send a pong frame with arbitrary payload unprompted at any
     // time (see RFC 6455 5.5.3). Because of this, we can't just remember the
@@ -190,7 +187,7 @@ impl State {
         rx_canary: oneshot::Receiver<Infallible>,
         event_tx: mpsc::UnboundedSender<Event>,
         mut event_rx: mpsc::UnboundedReceiver<Event>,
-        packet_tx: mpsc::UnboundedSender<Data>,
+        packet_tx: mpsc::UnboundedSender<ParsedPacket>,
     ) {
         let (ws_tx, mut ws_rx) = ws.split();
         let mut state = Self {
@@ -279,7 +276,7 @@ impl State {
 
         // Complete pending replies if the packet has an id
         if let Some(id) = &packet.id {
-            self.replies.complete(id, packet.content.clone());
+            self.replies.complete(id, packet.clone());
         }
 
         // Play a game of table tennis
@@ -306,12 +303,8 @@ impl State {
             }
         }
 
-        // Shovel events and successful replies into self.packet_tx. Assumes
-        // that no even ever errors and that erroring replies are not
-        // interesting.
-        if let Ok(data) = packet.content {
-            self.packet_tx.send(data)?;
-        }
+        // Shovel packets into self.packet_tx
+        self.packet_tx.send(packet)?;
 
         Ok(())
     }
@@ -319,7 +312,7 @@ impl State {
     async fn on_send_cmd(
         &mut self,
         data: Data,
-        reply_tx: oneshot::Sender<PendingReply<Result<Data, String>>>,
+        reply_tx: oneshot::Sender<PendingReply<ParsedPacket>>,
     ) -> InternalResult<()> {
         // Overkill of universe-heat-death-like proportions
         self.last_id = self.last_id.wrapping_add(1);
@@ -399,7 +392,7 @@ pub struct ConnTx {
 
 impl ConnTx {
     async fn finish_send<C>(
-        rx: oneshot::Receiver<PendingReply<Result<Data, String>>>,
+        rx: oneshot::Receiver<PendingReply<ParsedPacket>>,
     ) -> Result<C::Reply, Error>
     where
         C: Command,
@@ -418,6 +411,7 @@ impl ConnTx {
                 replies::Error::TimedOut => Error::TimedOut,
                 replies::Error::Canceled => Error::ConnectionClosed,
             })?
+            .content
             .map_err(Error::Euph)?;
         data.try_into().map_err(|_| Error::IncorrectReplyType)
     }
@@ -456,12 +450,12 @@ impl ConnTx {
 pub struct ConnRx {
     #[allow(dead_code)]
     canary: oneshot::Sender<Infallible>,
-    packet_rx: mpsc::UnboundedReceiver<Data>,
+    packet_rx: mpsc::UnboundedReceiver<ParsedPacket>,
 }
 
 impl ConnRx {
-    pub async fn recv(&mut self) -> Result<Data, Error> {
-        self.packet_rx.recv().await.ok_or(Error::ConnectionClosed)
+    pub async fn recv(&mut self) -> Option<ParsedPacket> {
+        self.packet_rx.recv().await
     }
 }
 

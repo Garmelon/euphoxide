@@ -46,8 +46,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let (ws, _) = tokio_tungstenite::connect_async(URI).await?;
     let (tx, mut rx) = euphoxide::conn::wrap(ws);
-    loop {
-        let data = rx.recv().await?;
+    while let Some(packet) = rx.recv().await {
+        let data = match packet.content {
+            Ok(data) => data,
+            Err(err) => {
+                println!("Error for {}: {err}", packet.r#type);
+                continue;
+            }
+        };
         match data {
             Data::HelloEvent(event) => println!("Connected with id {}", event.session.id),
             Data::SnapshotEvent(event) => {
