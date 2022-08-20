@@ -286,7 +286,6 @@ impl State {
                 let reply = PingReply { time: Some(p.time) };
                 event_tx.send(Event::send_rpl(packet.id.clone(), reply))?;
             }
-            // TODO Handle disconnect event?
             _ => {}
         }
 
