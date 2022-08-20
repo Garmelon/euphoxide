@@ -8,11 +8,11 @@ pub struct Packet {
     pub id: Option<String>,
     pub r#type: PacketType,
     pub data: Option<Value>,
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
-    #[serde(default, skip_serializing)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub throttled: bool,
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub throttled_reason: Option<String>,
 }
 
