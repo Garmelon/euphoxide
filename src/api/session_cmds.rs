@@ -1,4 +1,7 @@
 //! Session commands.
+//!
+//! Session management commands are involved in the initial handshake and
+//! maintenance of a session.
 
 use serde::{Deserialize, Serialize};
 
@@ -6,8 +9,8 @@ use super::{AuthOption, Time};
 
 /// Attempt to join a private room.
 ///
-/// This should be sent in response to a bounce event at the beginning of a
-/// session.
+/// This should be sent in response to a [`BounceEvent`](super::BounceEvent) at
+/// the beginning of a session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Auth {
     /// The method of authentication.

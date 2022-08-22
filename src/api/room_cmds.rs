@@ -1,4 +1,7 @@
 //! Chat room commands.
+//!
+//! These commands are available to the client once a session successfully joins
+//! a room.
 
 use serde::{Deserialize, Serialize};
 
@@ -17,8 +20,9 @@ pub struct GetMessageReply(pub Message);
 
 /// Request messages from the room's message log.
 ///
-/// This can be used to supplement the log provided by snapshot-event (for
-/// example, when scrolling back further in history).
+/// This can be used to supplement the log provided by
+/// [`SnapshotEvent`](super::SnapshotEvent) (for example, when scrolling back
+/// further in history).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Log {
     /// Maximum number of messages to return (up to 1000).
