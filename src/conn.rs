@@ -18,7 +18,7 @@ use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 
 use crate::api::packet::{Command, Packet, ParsedPacket};
 use crate::api::{
-    BounceEvent, Data, HelloEvent, PersonalAccountView, Ping, PingReply, SessionView,
+    BounceEvent, Data, HelloEvent, LoginReply, PersonalAccountView, Ping, PingReply, SessionView,
     SnapshotEvent, Time, UserId,
 };
 use crate::replies::{self, PendingReply, Replies};
@@ -299,6 +299,21 @@ impl State {
                     }
                 }
                 Status::Joined(joined) => joined.on_data(data),
+            }
+
+            // The euphoria server doesn't always disconnect the client
+            // when it would make sense to do so or when the API
+            // specifies it should. This ensures we always disconnect
+            // when it makes sense to do so.
+            match data {
+                Data::DisconnectEvent(_) => return Err("received disconnect-event".into()),
+                Data::LoginEvent(_) => return Err("received login-event".into()),
+                Data::LogoutEvent(_) => return Err("received logout-event".into()),
+                Data::LoginReply(LoginReply { success: true, .. }) => {
+                    return Err("received successful login-reply".into())
+                }
+                Data::LogoutReply(_) => return Err("received logout-reply".into()),
+                _ => {}
             }
         }
 
