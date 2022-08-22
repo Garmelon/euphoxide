@@ -84,6 +84,7 @@ macro_rules! commands {
 }
 
 packets! {
+    // Events
     BounceEvent,
     DisconnectEvent,
     HelloEvent,
@@ -98,10 +99,12 @@ packets! {
     PmInitiateEvent,
     SendEvent,
     SnapshotEvent,
+    // Session commands
     Auth,
     AuthReply,
     Ping,
     PingReply,
+    // Chat room commands
     GetMessage,
     GetMessageReply,
     Log,
@@ -114,17 +117,45 @@ packets! {
     SendReply,
     Who,
     WhoReply,
+    // Account commands
+    ChangeEmail,
+    ChangeEmailReply,
+    ChangeName,
+    ChangeNameReply,
+    ChangePassword,
+    ChangePasswordReply,
+    Login,
+    LoginReply,
+    Logout,
+    LogoutReply,
+    RegisterAccount,
+    RegisterAccountReply,
+    ResendVerificationEmail,
+    ResendVerificationEmailReply,
+    ResetPassword,
+    ResetPasswordReply,
 }
 
 commands! {
+    // Session commands
     Auth => AuthReply,
     Ping => PingReply,
+    // Chat room commands
     GetMessage => GetMessageReply,
     Log => LogReply,
     Nick => NickReply,
     PmInitiate => PmInitiateReply,
     Send => SendReply,
     Who => WhoReply,
+    // Account commands
+    ChangeEmail => ChangeEmailReply,
+    ChangeName => ChangeNameReply,
+    ChangePassword => ChangePasswordReply,
+    Login => LoginReply,
+    Logout => LogoutReply,
+    RegisterAccount => RegisterAccountReply,
+    ResendVerificationEmail => ResendVerificationEmailReply,
+    ResetPassword => ResetPasswordReply,
 }
 
 #[derive(Debug, Clone)]
