@@ -116,5 +116,5 @@ pub struct Who;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WhoReply {
     /// A list of session views.
-    listing: Vec<SessionView>,
+    pub listing: Vec<SessionView>,
 }
