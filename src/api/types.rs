@@ -18,7 +18,7 @@ use time::OffsetDateTime;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountView {
     /// The id of the account.
-    pub id: Snowflake,
+    pub id: AccountId,
     /// The name that the holder of the account goes by.
     pub name: String,
 }
@@ -39,10 +39,10 @@ pub enum AuthOption {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
     /// The id of the message (unique within a room).
-    pub id: Snowflake,
+    pub id: MessageId,
     /// The id of the message's parent, or null if top-level.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent: Option<Snowflake>,
+    pub parent: Option<MessageId>,
     /// The edit id of the most recent edit of this message, or null if it's
     /// never been edited.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -253,7 +253,7 @@ impl fmt::Display for PacketType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PersonalAccountView {
     /// The id of the account.
-    pub id: Snowflake,
+    pub id: AccountId,
     /// The name that the holder of the account goes by.
     pub name: String,
     /// The account's email address.
@@ -272,7 +272,7 @@ pub struct SessionView {
     /// The era of the server that captured this view.
     pub server_era: String,
     /// Id of the session, unique across all sessions globally.
-    pub session_id: String,
+    pub session_id: SessionId,
     /// If true, this session belongs to a member of staff.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub is_staff: bool,
@@ -423,3 +423,33 @@ impl UserId {
         }
     }
 }
+
+/// Identifies an account.
+///
+/// This type is a wrapper around [`Snowflake`] meant for type safety. It is not
+/// specified in the euphoria API itself.
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct AccountId(pub Snowflake);
+
+/// Identifies a message.
+///
+/// This type is a wrapper around [`Snowflake`] meant for type safety. It is not
+/// specified in the euphoria API itself.
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct MessageId(pub Snowflake);
+
+/// Identifies a private room.
+///
+/// This type is a wrapper around [`Snowflake`] meant for type safety. It is not
+/// specified in the euphoria API itself.
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct PmId(pub Snowflake);
+
+/// Identifies a session.
+///
+/// This type is a wrapper around [`String`] meant for type safety. It is not
+/// specified in the euphoria API itself.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct SessionId(pub String);
+
+// TODO Find out if an edit id is a MessageId or if it deserves a wrapper

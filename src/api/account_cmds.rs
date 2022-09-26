@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::Snowflake;
+use super::AccountId;
 
 /// Change the primary email address associated with the signed in account.
 ///
@@ -88,7 +88,7 @@ pub struct LoginReply {
     pub reason: Option<String>,
     /// If [`Self::success`] was true, the id of the account the session logged
     /// into.
-    pub account_id: Option<Snowflake>,
+    pub account_id: Option<AccountId>,
 }
 
 /// Log a session out of an account.
@@ -137,7 +137,7 @@ pub struct RegisterAccountReply {
     pub reason: Option<String>,
     /// If [`Self::success`] was true, the id of the account the session logged
     /// into.
-    pub account_id: Option<Snowflake>,
+    pub account_id: Option<AccountId>,
 }
 
 /// Force a new email to be sent for verifying an accounts primary email

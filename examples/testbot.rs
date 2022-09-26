@@ -94,7 +94,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 event.from, event.id, event.to
             ),
             Data::SendEvent(event) => {
-                println!("Message {} was just sent", event.0.id);
+                println!("Message {} was just sent", event.0.id.0);
 
                 let content = event.0.content.trim();
                 let mut reply = None;

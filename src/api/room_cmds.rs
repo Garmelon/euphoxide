@@ -5,13 +5,13 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{Message, SessionView, Snowflake, UserId};
+use super::{Message, MessageId, PmId, SessionId, SessionView, UserId};
 
 /// Retrieve the full content of a single message in the room.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GetMessage {
     /// The id of the message to retrieve.
-    pub id: Snowflake,
+    pub id: MessageId,
 }
 
 /// The message retrieved by [`GetMessage`].
@@ -28,7 +28,7 @@ pub struct Log {
     /// Maximum number of messages to return (up to 1000).
     pub n: usize,
     /// Return messages prior to this snowflake.
-    pub before: Option<Snowflake>,
+    pub before: Option<MessageId>,
 }
 
 /// List of messages from the room's message log.
@@ -37,7 +37,7 @@ pub struct LogReply {
     /// List of messages returned.
     pub log: Vec<Message>,
     /// Messages prior to this snowflake were returned.
-    pub before: Option<Snowflake>,
+    pub before: Option<MessageId>,
 }
 
 /// Set the name you present to the room.
@@ -57,7 +57,7 @@ pub struct Nick {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NickReply {
     /// The id of the session this name applies to.
-    pub session_id: String,
+    pub session_id: SessionId,
     /// The id of the agent or account logged into the session.
     pub id: UserId,
     /// The previous name associated with the session.
@@ -78,7 +78,7 @@ pub struct PmInitiate {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PmInitiateReply {
     /// The private chat can be accessed at `/room/pm:<pm_id>`.
-    pub pm_id: Snowflake,
+    pub pm_id: PmId,
     /// The nickname of the recipient of the invitation.
     pub to_nick: String,
 }
@@ -99,7 +99,7 @@ pub struct Send {
     /// The content of the message (client-defined).
     pub content: String,
     /// The id of the parent message, if any.
-    pub parent: Option<Snowflake>,
+    pub parent: Option<MessageId>,
 }
 
 /// The message that was sent.

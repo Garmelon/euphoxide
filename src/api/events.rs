@@ -2,7 +2,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{AuthOption, Message, PersonalAccountView, SessionView, Snowflake, Time, UserId};
+use super::{
+    AccountId, AuthOption, Message, PersonalAccountView, PmId, SessionId, SessionView, Snowflake,
+    Time, UserId,
+};
 
 /// Indicates that access to a room is denied.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,7 +62,7 @@ pub struct JoinEvent(pub SessionView);
 /// the session that issued the login command).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginEvent {
-    pub account_id: Snowflake,
+    pub account_id: AccountId,
 }
 
 /// Sent to all sessions of an agent when that agent is logged out (except for
@@ -86,7 +89,7 @@ pub struct NetworkEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NickEvent {
     /// The id of the session this name applies to.
-    pub session_id: String,
+    pub session_id: SessionId,
     /// The id of the agent or account logged into the session.
     pub id: UserId,
     /// The previous name associated with the session.
@@ -137,7 +140,7 @@ pub struct PmInitiateEvent {
     /// The room where the invitation was sent from.
     pub from_room: String,
     /// The private chat can be accessed at `/room/pm:<pm_id>`.
-    pub pm_id: Snowflake,
+    pub pm_id: PmId,
 }
 
 /// Indicates a message received by the room from another session.
@@ -152,7 +155,7 @@ pub struct SnapshotEvent {
     /// The id of the agent or account logged into this session.
     pub identity: UserId,
     /// The globally unique id of this session.
-    pub session_id: String,
+    pub session_id: SessionId,
     /// The server’s version identifier.
     pub version: String,
     /// The list of all other sessions joined to the room (excluding this
