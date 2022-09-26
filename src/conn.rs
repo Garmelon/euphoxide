@@ -18,8 +18,8 @@ use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 
 use crate::api::packet::{Command, Packet, ParsedPacket};
 use crate::api::{
-    BounceEvent, Data, HelloEvent, LoginReply, PersonalAccountView, Ping, PingReply, SessionId,
-    SessionView, SnapshotEvent, Time,
+    BounceEvent, Data, HelloEvent, LoginReply, NickEvent, PersonalAccountView, Ping, PingReply,
+    SessionId, SessionView, SnapshotEvent, Time, UserId,
 };
 use crate::replies::{self, PendingReply, Replies};
 
@@ -93,7 +93,7 @@ impl Joining {
                 .listing
                 .iter()
                 .cloned()
-                .map(|s| (s.session_id.clone(), s))
+                .map(|s| (s.session_id.clone(), SessionInfo::Full(s)))
                 .collect::<HashMap<_, _>>();
             Some(Joined {
                 session,
@@ -106,39 +106,86 @@ impl Joining {
     }
 }
 
-// TODO Track nick events for listing, add InferredSessionView
+#[derive(Debug, Clone)]
+pub enum SessionInfo {
+    Full(SessionView),
+    Partial(NickEvent),
+}
+
+impl SessionInfo {
+    pub fn id(&self) -> &UserId {
+        match self {
+            Self::Full(sess) => &sess.id,
+            Self::Partial(nick) => &nick.id,
+        }
+    }
+
+    pub fn session_id(&self) -> &SessionId {
+        match self {
+            Self::Full(sess) => &sess.session_id,
+            Self::Partial(nick) => &nick.session_id,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Full(sess) => &sess.name,
+            Self::Partial(nick) => &nick.to,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Joined {
     pub session: SessionView,
     pub account: Option<PersonalAccountView>,
-    pub listing: HashMap<SessionId, SessionView>,
+    pub listing: HashMap<SessionId, SessionInfo>,
 }
 
 impl Joined {
     fn on_data(&mut self, data: &Data) {
         match data {
             Data::JoinEvent(p) => {
-                self.listing.insert(p.0.session_id.clone(), p.0.clone());
+                self.listing
+                    .insert(p.0.session_id.clone(), SessionInfo::Full(p.0.clone()));
             }
             Data::SendEvent(p) => {
-                self.listing
-                    .insert(p.0.sender.session_id.clone(), p.0.sender.clone());
+                self.listing.insert(
+                    p.0.sender.session_id.clone(),
+                    SessionInfo::Full(p.0.sender.clone()),
+                );
             }
             Data::PartEvent(p) => {
                 self.listing.remove(&p.0.session_id);
             }
             Data::NetworkEvent(p) => {
                 if p.r#type == "partition" {
-                    self.listing.retain(|_, s| {
-                        !(s.server_id == p.server_id && s.server_era == p.server_era)
+                    self.listing.retain(|_, s| match s {
+                        SessionInfo::Full(s) => {
+                            s.server_id != p.server_id && s.server_era != p.server_era
+                        }
+                        // We can't know if the session was disconnected by the
+                        // partition or not, so we're erring on the side of
+                        // caution and assuming they were kicked. If we're
+                        // wrong, we'll re-add the session as soon as it
+                        // performs another visible action.
+                        //
+                        // If we always kept such sessions, we might keep
+                        // disconnected ones indefinitely, thereby keeping them
+                        // from moving on, instead forever tethering them to the
+                        // digital realm.
+                        SessionInfo::Partial(_) => false,
                     });
                 }
             }
             Data::NickEvent(p) => {
-                if let Some(session) = self.listing.get_mut(&p.session_id) {
-                    session.name = p.to.clone();
-                }
+                self.listing
+                    .entry(p.session_id.clone())
+                    .and_modify(|s| match s {
+                        SessionInfo::Full(session) => session.name = p.to.clone(),
+                        SessionInfo::Partial(_) => *s = SessionInfo::Partial(p.clone()),
+                    })
+                    .or_insert_with(|| SessionInfo::Partial(p.clone()));
             }
             Data::NickReply(p) => {
                 assert_eq!(self.session.id, p.id);

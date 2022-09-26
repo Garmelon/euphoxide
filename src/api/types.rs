@@ -394,7 +394,7 @@ impl Time {
 ///
 /// It is possible for this value to have no prefix and colon, and there is no
 /// fixed format for the unique value.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct UserId(pub String);
 
 impl fmt::Display for UserId {
