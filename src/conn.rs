@@ -18,8 +18,8 @@ use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 
 use crate::api::packet::{Command, Packet, ParsedPacket};
 use crate::api::{
-    BounceEvent, Data, HelloEvent, LoginReply, PersonalAccountView, Ping, PingReply, SessionView,
-    SnapshotEvent, Time, UserId,
+    BounceEvent, Data, HelloEvent, LoginReply, PersonalAccountView, Ping, PingReply, SessionId,
+    SessionView, SnapshotEvent, Time,
 };
 use crate::replies::{self, PendingReply, Replies};
 
@@ -93,7 +93,7 @@ impl Joining {
                 .listing
                 .iter()
                 .cloned()
-                .map(|s| (s.id.clone(), s))
+                .map(|s| (s.session_id.clone(), s))
                 .collect::<HashMap<_, _>>();
             Some(Joined {
                 session,
@@ -106,25 +106,27 @@ impl Joining {
     }
 }
 
+// TODO Track nick events for listing, add InferredSessionView
+
 #[derive(Debug, Clone)]
 pub struct Joined {
     pub session: SessionView,
     pub account: Option<PersonalAccountView>,
-    pub listing: HashMap<UserId, SessionView>,
+    pub listing: HashMap<SessionId, SessionView>,
 }
 
 impl Joined {
     fn on_data(&mut self, data: &Data) {
         match data {
             Data::JoinEvent(p) => {
-                self.listing.insert(p.0.id.clone(), p.0.clone());
+                self.listing.insert(p.0.session_id.clone(), p.0.clone());
             }
             Data::SendEvent(p) => {
                 self.listing
-                    .insert(p.0.sender.id.clone(), p.0.sender.clone());
+                    .insert(p.0.sender.session_id.clone(), p.0.sender.clone());
             }
             Data::PartEvent(p) => {
-                self.listing.remove(&p.0.id);
+                self.listing.remove(&p.0.session_id);
             }
             Data::NetworkEvent(p) => {
                 if p.r#type == "partition" {
@@ -134,7 +136,7 @@ impl Joined {
                 }
             }
             Data::NickEvent(p) => {
-                if let Some(session) = self.listing.get_mut(&p.id) {
+                if let Some(session) = self.listing.get_mut(&p.session_id) {
                     session.name = p.to.clone();
                 }
             }
