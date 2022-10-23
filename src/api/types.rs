@@ -6,9 +6,9 @@
 // so I'm turning it off for the entire module.
 #![allow(clippy::use_self)]
 
-use std::fmt;
 use std::num::ParseIntError;
 use std::str::FromStr;
+use std::{error, fmt};
 
 use serde::{de, ser, Deserialize, Serialize};
 use serde_json::Value;
@@ -324,12 +324,36 @@ impl fmt::Display for Snowflake {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum ParseSnowflakeError {
-    #[error("invalid length: expected 13 bytes, got {0}")]
     InvalidLength(usize),
-    #[error("{0}")]
-    ParseIntError(#[from] ParseIntError),
+    ParseIntError(ParseIntError),
+}
+
+impl fmt::Display for ParseSnowflakeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidLength(l) => {
+                write!(f, "invalid length: expected 13 bytes, got {l}")
+            }
+            Self::ParseIntError(from) => write!(f, "{from}"),
+        }
+    }
+}
+
+impl error::Error for ParseSnowflakeError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match self {
+            Self::InvalidLength(_) => None,
+            Self::ParseIntError(from) => Some(from),
+        }
+    }
+}
+
+impl From<ParseIntError> for ParseSnowflakeError {
+    fn from(err: ParseIntError) -> Self {
+        Self::ParseIntError(err)
+    }
 }
 
 impl FromStr for Snowflake {

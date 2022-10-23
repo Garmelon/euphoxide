@@ -1,18 +1,28 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::hash::Hash;
-use std::result;
 use std::time::Duration;
+use std::{error, result};
 
 use tokio::sync::oneshot::{self, Receiver, Sender};
 use tokio::time;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum Error {
-    #[error("timed out")]
     TimedOut,
-    #[error("canceled")]
     Canceled,
 }
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::TimedOut => write!(f, "timed out"),
+            Self::Canceled => write!(f, "canceled"),
+        }
+    }
+}
+
+impl error::Error for Error {}
 
 pub type Result<T> = result::Result<T, Error>;
 

@@ -4,9 +4,9 @@
 
 use std::collections::HashMap;
 use std::convert::Infallible;
-use std::error;
 use std::future::Future;
 use std::time::Duration;
+use std::{error, fmt};
 
 use futures::channel::oneshot;
 use futures::stream::{SplitSink, SplitStream};
@@ -25,17 +25,26 @@ use crate::replies::{self, PendingReply, Replies};
 
 pub type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum Error {
-    #[error("connection closed")]
     ConnectionClosed,
-    #[error("packet timed out")]
     TimedOut,
-    #[error("incorrect reply type")]
     IncorrectReplyType,
-    #[error("{0}")]
     Euph(String),
 }
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ConnectionClosed => write!(f, "connection closed"),
+            Self::TimedOut => write!(f, "packet timed out"),
+            Self::IncorrectReplyType => write!(f, "incorrect reply type"),
+            Self::Euph(error_msg) => write!(f, "{error_msg}"),
+        }
+    }
+}
+
+impl error::Error for Error {}
 
 type InternalResult<T> = Result<T, Box<dyn error::Error>>;
 
