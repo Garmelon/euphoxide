@@ -13,6 +13,9 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Added
+- `euphoxide::connect`
+
 ## v0.1.0 - 2022-10-23
 
 Initial release

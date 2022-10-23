@@ -14,6 +14,8 @@ use futures::{SinkExt, StreamExt};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 use tokio::{select, task, time};
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+use tokio_tungstenite::tungstenite::http::{header, HeaderValue};
 use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 
 use crate::api::packet::{Command, Packet, ParsedPacket};
@@ -558,4 +560,28 @@ pub fn wrap(ws: WsStream, timeout: Duration) -> (ConnTx, ConnRx) {
         packet_rx,
     };
     (tx, rx)
+}
+
+pub async fn connect(
+    domain: &str,
+    room: &str,
+    human: bool,
+    cookies: Option<HeaderValue>,
+    timeout: Duration,
+) -> tungstenite::Result<(ConnTx, ConnRx, Vec<HeaderValue>)> {
+    let human = if human { "?h=1" } else { "" };
+    let uri = format!("wss://{domain}/room/{room}/ws{human}");
+    let mut request = uri.into_client_request().expect("valid request");
+    if let Some(cookies) = cookies {
+        request.headers_mut().append(header::COOKIE, cookies);
+    }
+
+    let (ws, response) = tokio_tungstenite::connect_async(request).await?;
+    let (mut parts, ()) = response.into_parts();
+    let set_cookies = match parts.headers.entry(header::SET_COOKIE) {
+        header::Entry::Occupied(entry) => entry.remove_entry_mult().1.collect(),
+        header::Entry::Vacant(_) => vec![],
+    };
+    let (tx, rx) = wrap(ws, timeout);
+    Ok((tx, rx, set_cookies))
 }

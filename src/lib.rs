@@ -19,5 +19,5 @@ pub mod conn;
 mod huehash;
 mod replies;
 
-pub use conn::wrap;
+pub use conn::{connect, wrap};
 pub use huehash::nick_hue;
