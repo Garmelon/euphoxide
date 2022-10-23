@@ -533,8 +533,6 @@ impl ConnRx {
     }
 }
 
-// TODO Combine ConnTx and ConnRx and implement Stream + Sink?
-
 pub fn wrap(ws: WsStream, timeout: Duration) -> (ConnTx, ConnRx) {
     let (tx_canary_tx, tx_canary_rx) = mpsc::unbounded_channel();
     let (rx_canary_tx, rx_canary_rx) = oneshot::channel();
