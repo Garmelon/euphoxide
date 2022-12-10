@@ -575,7 +575,7 @@ pub async fn connect(
     }
 
     let (ws, response) = tokio_tungstenite::connect_async(request).await?;
-    let (mut parts, ()) = response.into_parts();
+    let (mut parts, _) = response.into_parts();
     let set_cookies = match parts.headers.entry(header::SET_COOKIE) {
         header::Entry::Occupied(entry) => entry.remove_entry_mult().1.collect(),
         header::Entry::Vacant(_) => vec![],
