@@ -216,6 +216,36 @@ pub enum Status {
     Joined(Joined),
 }
 
+impl Status {
+    pub fn into_joining(self) -> Option<Joining> {
+        match self {
+            Self::Joining(joining) => Some(joining),
+            Self::Joined(_) => None,
+        }
+    }
+
+    pub fn into_joined(self) -> Option<Joined> {
+        match self {
+            Self::Joining(_) => None,
+            Self::Joined(joined) => Some(joined),
+        }
+    }
+
+    pub fn joining(&self) -> Option<&Joining> {
+        match self {
+            Self::Joining(joining) => Some(joining),
+            Self::Joined(_) => None,
+        }
+    }
+
+    pub fn joined(&self) -> Option<&Joined> {
+        match self {
+            Self::Joining(_) => None,
+            Self::Joined(joined) => Some(joined),
+        }
+    }
+}
+
 struct State {
     ws_tx: SplitSink<WsStream, tungstenite::Message>,
     last_id: usize,

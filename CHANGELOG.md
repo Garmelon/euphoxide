@@ -13,6 +13,9 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Added
+- `Status` conversion utility methods
+
 ## v0.2.0 - 2022-12-10
 
 ### Added
