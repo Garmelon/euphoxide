@@ -1,5 +1,6 @@
 //! All emoji the vanilla euphoria.io client knows.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
 
@@ -59,6 +60,35 @@ impl Emoji {
 
         result
     }
+
+    pub fn replace<'a>(&self, text: &'a str) -> Cow<'a, str> {
+        let emoji = self.find(text);
+        if emoji.is_empty() {
+            return Cow::Borrowed(text);
+        }
+
+        let mut result = String::new();
+
+        let mut after_last_emoji = 0;
+        for (range, replace) in emoji {
+            // Only replace emoji with a replacement
+            if let Some(replace) = replace {
+                if *range.start() > after_last_emoji {
+                    // There were non-emoji characters between the last and the
+                    // current emoji.
+                    result.push_str(&text[after_last_emoji..*range.start()]);
+                }
+                result.push_str(replace);
+                after_last_emoji = range.end() + 1;
+            }
+        }
+
+        if after_last_emoji < text.len() {
+            result.push_str(&text[after_last_emoji..]);
+        }
+
+        Cow::Owned(result)
+    }
 }
 
 #[cfg(test)]
@@ -86,5 +116,21 @@ mod test {
             emoji.find("ab:x:bad:o:cd"),
             vec![(2..=4, Some("❌")), (8..=10, Some("⭕"))]
         );
+    }
+
+    #[test]
+    fn replace() {
+        let emoji = Emoji::load();
+        assert_eq!(emoji.replace("no:emo:ji:here"), "no:emo:ji:here");
+        assert_eq!(emoji.replace(":bad:x:o:"), ":bad❌o:");
+        assert_eq!(emoji.replace(":x:bad:o:"), "❌bad⭕");
+        assert_eq!(emoji.replace("ab:bad:x:o:cd"), "ab:bad❌o:cd");
+        assert_eq!(emoji.replace("ab:x:bad:o:cd"), "ab❌bad⭕cd");
+        assert_eq!(emoji.replace("chᴜm:crown::ant:"), "chᴜm👑🐜");
+        assert_eq!(
+            emoji.replace(":waning_crescent_moon: (2% full)"),
+            "🌘 (2% full)"
+        );
+        assert_eq!(emoji.replace("Jan-20 17:58 Z"), "Jan-20 17:58 Z");
     }
 }
