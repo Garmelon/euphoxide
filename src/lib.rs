@@ -10,6 +10,8 @@
 #![warn(clippy::use_self)]
 
 pub mod api;
+#[cfg(feature = "bot")]
+pub mod bot;
 pub mod conn;
 pub mod emoji;
 mod huehash;

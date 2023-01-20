@@ -3,6 +3,9 @@ name = "euphoxide"
 version = "0.2.0"
 edition = "2021"
 
+[features]
+bot = []
+
 [dependencies]
 futures-util = { version = "0.3.25", default-features = false, features = ["sink"] }
 serde = { version = "1.0.149", features = ["derive"] }
