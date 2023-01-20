@@ -69,14 +69,24 @@ impl error::Error for Error {}
 
 type Result<T> = result::Result<T, Error>;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Joining {
+    pub since: OffsetDateTime,
     pub hello: Option<HelloEvent>,
     pub snapshot: Option<SnapshotEvent>,
     pub bounce: Option<BounceEvent>,
 }
 
 impl Joining {
+    fn new() -> Self {
+        Self {
+            since: OffsetDateTime::now_utc(),
+            hello: None,
+            snapshot: None,
+            bounce: None,
+        }
+    }
+
     fn on_data(&mut self, data: &Data) -> Result<()> {
         match data {
             Data::BounceEvent(p) => self.bounce = Some(p.clone()),
@@ -108,6 +118,7 @@ impl Joining {
                 .map(|s| (s.session_id.clone(), SessionInfo::Full(s)))
                 .collect::<HashMap<_, _>>();
             Some(Joined {
+                since: OffsetDateTime::now_utc(),
                 session,
                 account: hello.account.clone(),
                 listing,
@@ -149,6 +160,7 @@ impl SessionInfo {
 
 #[derive(Debug, Clone)]
 pub struct Joined {
+    pub since: OffsetDateTime,
     pub session: SessionView,
     pub account: Option<PersonalAccountView>,
     pub listing: HashMap<SessionId, SessionInfo>,
@@ -568,7 +580,7 @@ impl Conn {
             last_euph_ping_payload: None,
             last_euph_ping_replied_to: false,
 
-            state: State::Joining(Joining::default()),
+            state: State::Joining(Joining::new()),
         }
     }
 
