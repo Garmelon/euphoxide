@@ -14,6 +14,7 @@ Procedure when bumping the version number:
 ## Unreleased
 
 ### Added
+- All emoji known to the vanilla client
 - `State` conversion utility methods
 - `Time::new` constructor
 
