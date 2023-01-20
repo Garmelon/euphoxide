@@ -18,3 +18,7 @@ tokio-tungstenite = "0.18.0"
 [dev-dependencies] # For example bot
 tokio = { version = "1.23.0", features = ["rt-multi-thread"] }
 tokio-tungstenite = { version = "0.18.0", features = ["rustls-tls-native-roots"] }
+
+[[example]]
+name = "testbot_instance"
+required-features = ["bot"]
