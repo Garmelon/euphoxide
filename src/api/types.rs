@@ -12,7 +12,7 @@ use std::{error, fmt};
 
 use serde::{de, ser, Deserialize, Serialize};
 use serde_json::Value;
-use time::OffsetDateTime;
+use time::{OffsetDateTime, UtcOffset};
 
 /// Describes an account and its preferred name.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -406,8 +406,16 @@ impl<'de> Deserialize<'de> for Snowflake {
 pub struct Time(#[serde(with = "time::serde::timestamp")] pub OffsetDateTime);
 
 impl Time {
+    pub fn new(time: OffsetDateTime) -> Self {
+        let time = time
+            .to_offset(UtcOffset::UTC)
+            .replace_millisecond(0)
+            .unwrap();
+        Self(time)
+    }
+
     pub fn now() -> Self {
-        Self(OffsetDateTime::now_utc().replace_millisecond(0).unwrap())
+        Self::new(OffsetDateTime::now_utc())
     }
 }
 

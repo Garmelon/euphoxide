@@ -15,6 +15,7 @@ Procedure when bumping the version number:
 
 ### Added
 - `Status` conversion utility methods
+- `Time::new` constructor
 
 ## v0.2.0 - 2022-12-10
 
