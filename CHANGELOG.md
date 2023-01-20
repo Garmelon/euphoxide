@@ -15,7 +15,7 @@ Procedure when bumping the version number:
 
 ### Added
 - All emoji known to the vanilla client
-- Finding and replacing emoji in text
+- Finding, replacing and removing emoji in text
 - `State` conversion utility methods
 - `Time::new` constructor
 

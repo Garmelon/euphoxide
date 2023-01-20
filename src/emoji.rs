@@ -89,6 +89,31 @@ impl Emoji {
 
         Cow::Owned(result)
     }
+
+    pub fn remove<'a>(&self, text: &'a str) -> Cow<'a, str> {
+        let emoji = self.find(text);
+        if emoji.is_empty() {
+            return Cow::Borrowed(text);
+        }
+
+        let mut result = String::new();
+
+        let mut after_last_emoji = 0;
+        for (range, _) in emoji {
+            if *range.start() > after_last_emoji {
+                // There were non-emoji characters between the last and the
+                // current emoji.
+                result.push_str(&text[after_last_emoji..*range.start()]);
+            }
+            after_last_emoji = range.end() + 1;
+        }
+
+        if after_last_emoji < text.len() {
+            result.push_str(&text[after_last_emoji..]);
+        }
+
+        Cow::Owned(result)
+    }
 }
 
 #[cfg(test)]
@@ -132,5 +157,21 @@ mod test {
             "🌘 (2% full)"
         );
         assert_eq!(emoji.replace("Jan-20 17:58 Z"), "Jan-20 17:58 Z");
+    }
+
+    #[test]
+    fn remove() {
+        let emoji = Emoji::load();
+        assert_eq!(emoji.remove("no:emo:ji:here"), "no:emo:ji:here");
+        assert_eq!(emoji.remove(":bad:x:o:"), ":bado:");
+        assert_eq!(emoji.remove(":x:bad:o:"), "bad");
+        assert_eq!(emoji.remove("ab:bad:x:o:cd"), "ab:bado:cd");
+        assert_eq!(emoji.remove("ab:x:bad:o:cd"), "abbadcd");
+        assert_eq!(emoji.remove("chᴜm:crown::ant:"), "chᴜm");
+        assert_eq!(
+            emoji.remove(":waning_crescent_moon: (2% full)"),
+            " (2% full)"
+        );
+        assert_eq!(emoji.remove("Jan-20 17:58 Z"), "Jan-20 17:58 Z");
     }
 }
