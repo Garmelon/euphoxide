@@ -1,5 +1,7 @@
+use crate::emoji::Emoji;
+
+/// Does not remove emoji.
 fn normalize(text: &str) -> String {
-    // TODO Remove emoji names?
     text.chars()
         .filter(|&c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
         .map(|c| c.to_ascii_lowercase())
@@ -22,11 +24,20 @@ fn hue_hash(text: &str, offset: i64) -> u8 {
 
 const GREENIE_OFFSET: i64 = 148 - 192; // 148 - hue_hash("greenie", 0)
 
-pub fn nick_hue(nick: &str) -> u8 {
+/// Calculate the nick hue without removing colon-delimited emoji as part of
+/// normalization.
+///
+/// This should be slightly faster than [`nick_hue`] but produces incorrect
+/// results if any colon-delimited emoji are present.
+pub fn nick_hue_without_removing_emoji(nick: &str) -> u8 {
     let normalized = normalize(nick);
     if normalized.is_empty() {
         hue_hash(nick, GREENIE_OFFSET)
     } else {
         hue_hash(&normalized, GREENIE_OFFSET)
     }
+}
+
+pub fn nick_hue(emoji: &Emoji, nick: &str) -> u8 {
+    nick_hue_without_removing_emoji(&emoji.remove(nick))
 }

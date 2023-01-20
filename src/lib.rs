@@ -15,4 +15,4 @@ pub mod emoji;
 mod huehash;
 mod replies;
 
-pub use huehash::nick_hue;
+pub use huehash::{nick_hue, nick_hue_without_removing_emoji};

@@ -21,6 +21,8 @@ Procedure when bumping the version number:
 
 ### Changed
 - Rewrite `conn` module (backwards-imcompatible)
+- Take emoji into account when calculating nick hue using `nick_hue` (backwards-incompatible)
+- Rename `nick_hue` to `nick_hue_without_removing_emoji`
 
 ## v0.2.0 - 2022-12-10
 
