@@ -49,8 +49,7 @@ pub struct Replies<I, R> {
     pending: HashMap<I, Sender<R>>,
 }
 
-// TODO Relax bounds
-impl<I: Eq + Hash, R> Replies<I, R> {
+impl<I, R> Replies<I, R> {
     pub fn new(timeout: Duration) -> Self {
         Self {
             timeout,
@@ -62,7 +61,10 @@ impl<I: Eq + Hash, R> Replies<I, R> {
         self.timeout
     }
 
-    pub fn wait_for(&mut self, id: I) -> PendingReply<R> {
+    pub fn wait_for(&mut self, id: I) -> PendingReply<R>
+    where
+        I: Eq + Hash,
+    {
         let (tx, rx) = oneshot::channel();
         self.pending.insert(id, tx);
         PendingReply {
@@ -71,7 +73,10 @@ impl<I: Eq + Hash, R> Replies<I, R> {
         }
     }
 
-    pub fn complete(&mut self, id: &I, result: R) {
+    pub fn complete(&mut self, id: &I, result: R)
+    where
+        I: Eq + Hash,
+    {
         if let Some(tx) = self.pending.remove(id) {
             let _ = tx.send(result);
         }
