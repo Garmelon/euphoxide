@@ -2,8 +2,11 @@ use std::error::Error;
 use std::time::{Duration, Instant};
 
 use euphoxide::api::{Data, Nick, Send};
+use euphoxide::conn::Conn;
 
-const URI: &str = "wss://euphoria.io/room/test/ws";
+const TIMEOUT: Duration = Duration::from_secs(10);
+const DOMAIN: &str = "euphoria.io";
+const ROOM: &str = "test";
 const NICK: &str = "TestBot";
 const HELP: &str = "I'm an example bot for https://github.com/Garmelon/euphoxide";
 
@@ -44,9 +47,9 @@ fn format_delta(delta: Duration) -> String {
 async fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
-    let (ws, _) = tokio_tungstenite::connect_async(URI).await?;
-    let (tx, mut rx) = euphoxide::conn::wrap(ws, Duration::from_secs(30));
-    while let Some(packet) = rx.recv().await {
+    let (mut conn, _) = Conn::connect(DOMAIN, ROOM, false, None, TIMEOUT).await?;
+
+    while let Ok(packet) = conn.recv().await {
         let data = match packet.content {
             Ok(data) => data,
             Err(err) => {
@@ -64,11 +67,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 // Here, a new task is spawned so the main event loop can
                 // continue running immediately instead of waiting for a reply
                 // from the server.
-                let tx_clone = tx.clone();
+                //
+                // We only need to do this because we want to log the result of
+                // the nick command. Otherwise, we could've just called
+                // tx.send() synchronously and ignored the returned Future.
+                let tx = conn.tx().clone();
                 tokio::spawn(async move {
                     // Awaiting the future returned by the send command lets you
                     // (type-safely) access the server's reply.
-                    let reply = tx_clone
+                    let reply = tx
                         .send(Nick {
                             name: NICK.to_string(),
                         })
@@ -118,7 +125,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     // would be a race between sending the message and closing
                     // the connection as the send function can return before the
                     // message has actually been sent.
-                    let _ = tx
+                    let _ = conn
+                        .tx()
                         .send(Send {
                             content: "/me dies".to_string(),
                             parent: Some(event.0.id),
@@ -131,7 +139,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     // If you are not interested in the result, you can just
                     // throw away the future returned by the send function.
                     println!("Sending reply...");
-                    let _ = tx.send(Send {
+                    let _ = conn.tx().send(Send {
                         content: reply,
                         parent: Some(event.0.id),
                     });

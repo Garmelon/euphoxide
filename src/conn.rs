@@ -1,24 +1,22 @@
 //! Connection state modeling.
 
-// TODO Catch errors differently when sending into mpsc/oneshot
-
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::future::Future;
-use std::time::Duration;
-use std::{error, fmt};
+use std::time::{Duration, Instant};
+use std::{error, fmt, result};
 
-use futures::channel::oneshot;
-use futures::stream::{SplitSink, SplitStream};
-use futures::{SinkExt, StreamExt};
+use ::time::OffsetDateTime;
+use futures_util::SinkExt;
 use tokio::net::TcpStream;
-use tokio::sync::mpsc;
-use tokio::{select, task, time};
+use tokio::sync::{mpsc, oneshot};
+use tokio::{select, time};
+use tokio_stream::StreamExt;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::http::{header, HeaderValue};
 use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 
-use crate::api::packet::{Command, Packet, ParsedPacket};
+use crate::api::packet::{Command, ParsedPacket};
 use crate::api::{
     BounceEvent, Data, HelloEvent, LoginReply, NickEvent, PersonalAccountView, Ping, PingReply,
     SessionId, SessionView, SnapshotEvent, Time, UserId,
@@ -29,45 +27,47 @@ pub type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 #[derive(Debug)]
 pub enum Error {
+    /// The connection is now closed.
     ConnectionClosed,
-    TimedOut,
-    IncorrectReplyType,
+    /// The server didn't reply to one of our commands in time.
+    CommandTimedOut,
+    /// The server did something that violated the api specification.
+    ProtocolViolation(&'static str),
+    /// An error returned by the euphoria server.
     Euph(String),
+
+    Tungstenite(tungstenite::Error),
+    SerdeJson(serde_json::Error),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ConnectionClosed => write!(f, "connection closed"),
-            Self::TimedOut => write!(f, "packet timed out"),
-            Self::IncorrectReplyType => write!(f, "incorrect reply type"),
-            Self::Euph(error_msg) => write!(f, "{error_msg}"),
+            Self::CommandTimedOut => write!(f, "server did not reply to command in time"),
+            Self::ProtocolViolation(msg) => write!(f, "{msg}"),
+            Self::Euph(msg) => write!(f, "{msg}"),
+            Self::Tungstenite(err) => write!(f, "{err}"),
+            Self::SerdeJson(err) => write!(f, "{err}"),
         }
+    }
+}
+
+impl From<tungstenite::Error> for Error {
+    fn from(err: tungstenite::Error) -> Self {
+        Self::Tungstenite(err)
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Self {
+        Self::SerdeJson(err)
     }
 }
 
 impl error::Error for Error {}
 
-type InternalResult<T> = Result<T, Box<dyn error::Error>>;
-
-#[derive(Debug)]
-enum Event {
-    Message(tungstenite::Message),
-    SendCmd(Data, oneshot::Sender<PendingReply<ParsedPacket>>),
-    SendRpl(Option<String>, Data),
-    Status(oneshot::Sender<Status>),
-    DoPings,
-}
-
-impl Event {
-    fn send_cmd<C: Into<Data>>(cmd: C, rpl: oneshot::Sender<PendingReply<ParsedPacket>>) -> Self {
-        Self::SendCmd(cmd.into(), rpl)
-    }
-
-    fn send_rpl<C: Into<Data>>(id: Option<String>, rpl: C) -> Self {
-        Self::SendRpl(id, rpl.into())
-    }
-}
+type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, Clone, Default)]
 pub struct Joining {
@@ -77,18 +77,19 @@ pub struct Joining {
 }
 
 impl Joining {
-    fn on_data(&mut self, data: &Data) -> InternalResult<()> {
+    fn on_data(&mut self, data: &Data) -> Result<()> {
         match data {
             Data::BounceEvent(p) => self.bounce = Some(p.clone()),
             Data::HelloEvent(p) => self.hello = Some(p.clone()),
             Data::SnapshotEvent(p) => self.snapshot = Some(p.clone()),
+            // TODO Check and maybe expand list of unexpected packet types
             Data::JoinEvent(_)
             | Data::NetworkEvent(_)
             | Data::NickEvent(_)
             | Data::EditMessageEvent(_)
             | Data::PartEvent(_)
             | Data::PmInitiateEvent(_)
-            | Data::SendEvent(_) => return Err("unexpected packet type".into()),
+            | Data::SendEvent(_) => return Err(Error::ProtocolViolation("unexpected packet type")),
             _ => {}
         }
         Ok(())
@@ -211,12 +212,12 @@ impl Joined {
 
 #[derive(Debug, Clone)]
 #[allow(clippy::large_enum_variant)]
-pub enum Status {
+pub enum State {
     Joining(Joining),
     Joined(Joined),
 }
 
-impl Status {
+impl State {
     pub fn into_joining(self) -> Option<Joining> {
         match self {
             Self::Joining(joining) => Some(joining),
@@ -246,178 +247,271 @@ impl Status {
     }
 }
 
-struct State {
-    ws_tx: SplitSink<WsStream, tungstenite::Message>,
+#[allow(clippy::large_enum_variant)]
+enum ConnCommand {
+    SendCmd(Data, oneshot::Sender<PendingReply<ParsedPacket>>),
+    GetState(oneshot::Sender<State>),
+}
+
+#[derive(Debug, Clone)]
+pub struct ConnTx {
+    cmd_tx: mpsc::UnboundedSender<ConnCommand>,
+}
+
+impl ConnTx {
+    /// The async part of sending a command.
+    ///
+    /// This is split into a separate function so that [`Self::send`] can be
+    /// fully synchronous (you can safely throw away the returned future) while
+    /// still guaranteeing that the packet was sent.
+    async fn finish_send<C>(rx: oneshot::Receiver<PendingReply<ParsedPacket>>) -> Result<C::Reply>
+    where
+        C: Command,
+        C::Reply: TryFrom<Data>,
+    {
+        let pending_reply = rx
+            .await
+            // This should only happen if something goes wrong during encoding
+            // of the packet or while sending it through the websocket. Assuming
+            // the first doesn't happen, the connection is probably closed.
+            .map_err(|_| Error::ConnectionClosed)?;
+
+        let data = pending_reply
+            .get()
+            .await
+            .map_err(|e| match e {
+                replies::Error::TimedOut => Error::CommandTimedOut,
+                replies::Error::Canceled => Error::ConnectionClosed,
+            })?
+            .content
+            .map_err(Error::Euph)?;
+
+        data.try_into()
+            .map_err(|_| Error::ProtocolViolation("incorrect command reply type"))
+    }
+
+    /// Send a command to the server.
+    ///
+    /// Returns a future containing the server's reply. This future does not
+    /// have to be awaited and can be safely ignored if you are not interested
+    /// in the reply.
+    ///
+    /// This function may return before the command was sent. To ensure that it
+    /// was sent before doing something else, await the returned future first.
+    ///
+    /// When called multiple times, this function guarantees that the commands
+    /// are sent in the order that the function is called.
+    pub fn send<C>(&self, cmd: C) -> impl Future<Output = Result<C::Reply>>
+    where
+        C: Command + Into<Data>,
+        C::Reply: TryFrom<Data>,
+    {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.cmd_tx.send(ConnCommand::SendCmd(cmd.into(), tx));
+        Self::finish_send::<C>(rx)
+    }
+
+    pub async fn state(&self) -> Result<State> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(ConnCommand::GetState(tx))
+            .map_err(|_| Error::ConnectionClosed)?;
+        rx.await.map_err(|_| Error::ConnectionClosed)
+    }
+}
+
+#[derive(Debug)]
+pub struct Conn {
+    ws: WsStream,
     last_id: usize,
     replies: Replies<String, ParsedPacket>,
 
-    packet_tx: mpsc::UnboundedSender<ParsedPacket>,
+    conn_tx: ConnTx,
+    cmd_rx: mpsc::UnboundedReceiver<ConnCommand>,
 
-    // The server may send a pong frame with arbitrary payload unprompted at any
-    // time (see RFC 6455 5.5.3). Because of this, we can't just remember the
-    // last pong payload.
-    ws_ping_counter: u64,
-    last_ws_ping: Option<Vec<u8>>,
+    // The websocket server may send a pong frame with arbitrary payload
+    // unprompted at any time (see RFC 6455 5.5.3). Because of this, we can't
+    // just remember the last pong payload.
+    last_ping: Instant,
+    last_ws_ping_payload: Option<Vec<u8>>,
     last_ws_ping_replied_to: bool,
+    last_euph_ping_payload: Option<Time>,
+    last_euph_ping_replied_to: bool,
 
-    last_euph_ping: Option<Time>,
-    last_euph_pong: Option<Time>,
-
-    status: Status,
+    state: State,
 }
 
-impl State {
-    async fn run(
-        ws: WsStream,
-        timeout: Duration,
-        mut tx_canary: mpsc::UnboundedReceiver<Infallible>,
-        rx_canary: oneshot::Receiver<Infallible>,
-        event_tx: mpsc::UnboundedSender<Event>,
-        mut event_rx: mpsc::UnboundedReceiver<Event>,
-        packet_tx: mpsc::UnboundedSender<ParsedPacket>,
-    ) {
-        let (ws_tx, mut ws_rx) = ws.split();
-        let mut state = Self {
-            ws_tx,
-            last_id: 0,
-            replies: Replies::new(timeout),
-            packet_tx,
-            ws_ping_counter: 0,
-            last_ws_ping: None,
-            last_ws_ping_replied_to: false,
-            last_euph_ping: None,
-            last_euph_pong: None,
-            status: Status::Joining(Joining::default()),
-        };
+enum ConnEvent {
+    Ws(Option<tungstenite::Result<tungstenite::Message>>),
+    Cmd(Option<ConnCommand>),
+    Ping,
+}
 
-        select! {
-            _ = tx_canary.recv() => (),
-            _ = rx_canary => (),
-            _ = Self::listen(&mut ws_rx, &event_tx) => (),
-            _ = Self::send_ping_events(&event_tx, timeout) => (),
-            _ = state.handle_events(&event_tx, &mut event_rx) => (),
-        }
+impl Conn {
+    pub fn tx(&self) -> &ConnTx {
+        &self.conn_tx
     }
 
-    async fn listen(
-        ws_rx: &mut SplitStream<WsStream>,
-        event_tx: &mpsc::UnboundedSender<Event>,
-    ) -> InternalResult<()> {
-        while let Some(msg) = ws_rx.next().await {
-            event_tx.send(Event::Message(msg?))?;
-        }
-        Ok(())
+    pub fn state(&self) -> &State {
+        &self.state
     }
 
-    async fn send_ping_events(
-        event_tx: &mpsc::UnboundedSender<Event>,
-        timeout: Duration,
-    ) -> InternalResult<()> {
+    pub async fn recv(&mut self) -> Result<ParsedPacket> {
         loop {
-            event_tx.send(Event::DoPings)?;
-            time::sleep(timeout).await;
-        }
-    }
-
-    async fn handle_events(
-        &mut self,
-        event_tx: &mpsc::UnboundedSender<Event>,
-        event_rx: &mut mpsc::UnboundedReceiver<Event>,
-    ) -> InternalResult<()> {
-        while let Some(ev) = event_rx.recv().await {
             self.replies.purge();
-            match ev {
-                Event::Message(msg) => self.on_msg(msg, event_tx)?,
-                Event::SendCmd(data, reply_tx) => self.on_send_cmd(data, reply_tx).await?,
-                Event::SendRpl(id, data) => self.on_send_rpl(id, data).await?,
-                Event::Status(reply_tx) => self.on_status(reply_tx),
-                Event::DoPings => self.do_pings(event_tx).await?,
+            let timeout = self.replies.timeout();
+
+            // All of these functions are cancel-safe.
+            let event = select! {
+                msg = self.ws.next() => ConnEvent::Ws(msg),
+                cmd = self.cmd_rx.recv() => ConnEvent::Cmd(cmd),
+                _ = Self::await_next_ping(self.last_ping, timeout) => ConnEvent::Ping,
+            };
+
+            match event {
+                ConnEvent::Ws(msg) => {
+                    if let Some(packet) = self.on_ws(msg).await? {
+                        break Ok(packet);
+                    }
+                }
+                ConnEvent::Cmd(Some(cmd)) => self.on_cmd(cmd).await?,
+                ConnEvent::Cmd(None) => unreachable!("self contains a ConnTx"),
+                ConnEvent::Ping => self.on_ping().await?,
             }
         }
-        Ok(())
     }
 
-    fn on_msg(
+    async fn on_ws(
         &mut self,
-        msg: tungstenite::Message,
-        event_tx: &mpsc::UnboundedSender<Event>,
-    ) -> InternalResult<()> {
+        msg: Option<tungstenite::Result<tungstenite::Message>>,
+    ) -> Result<Option<ParsedPacket>> {
+        let msg = msg.ok_or(Error::ConnectionClosed)??;
         match msg {
-            tungstenite::Message::Text(t) => self.on_packet(serde_json::from_str(&t)?, event_tx)?,
-            tungstenite::Message::Binary(_) => return Err("unexpected binary message".into()),
+            tungstenite::Message::Text(text) => {
+                let packet = ParsedPacket::from_packet(serde_json::from_str(&text)?)?;
+                self.on_packet(&packet).await?;
+                return Ok(Some(packet));
+            }
+            tungstenite::Message::Binary(_) => {
+                return Err(Error::ProtocolViolation("unexpected binary ws message"));
+            }
             tungstenite::Message::Ping(_) => {}
-            tungstenite::Message::Pong(p) => {
-                if self.last_ws_ping == Some(p) {
+            tungstenite::Message::Pong(payload) => {
+                if self.last_ws_ping_payload == Some(payload) {
                     self.last_ws_ping_replied_to = true;
                 }
             }
             tungstenite::Message::Close(_) => {}
             tungstenite::Message::Frame(_) => {}
         }
-        Ok(())
+        Ok(None)
     }
 
-    fn on_packet(
-        &mut self,
-        packet: Packet,
-        event_tx: &mpsc::UnboundedSender<Event>,
-    ) -> InternalResult<()> {
-        let packet = ParsedPacket::from_packet(packet)?;
-
+    async fn on_packet(&mut self, packet: &ParsedPacket) -> Result<()> {
         // Complete pending replies if the packet has an id
         if let Some(id) = &packet.id {
             self.replies.complete(id, packet.clone());
         }
 
-        // Play a game of table tennis
         match &packet.content {
-            Ok(Data::PingReply(p)) => self.last_euph_pong = p.time,
-            Ok(Data::PingEvent(p)) => {
+            Ok(data) => self.on_data(&packet.id, data).await,
+            Err(msg) => Err(Error::Euph(msg.clone())),
+        }
+    }
+
+    async fn on_data(&mut self, id: &Option<String>, data: &Data) -> Result<()> {
+        // Play a game of table tennis
+        match data {
+            Data::PingReply(p) => {
+                if self.last_euph_ping_payload.is_some() && self.last_euph_ping_payload == p.time {
+                    self.last_euph_ping_replied_to = true;
+                }
+            }
+            Data::PingEvent(p) => {
                 let reply = PingReply { time: Some(p.time) };
-                event_tx.send(Event::send_rpl(packet.id.clone(), reply))?;
+                self.send_rpl(id.clone(), reply.into()).await?;
             }
             _ => {}
         }
 
         // Update internal state
-        if let Ok(data) = &packet.content {
-            match &mut self.status {
-                Status::Joining(joining) => {
-                    joining.on_data(data)?;
-                    if let Some(joined) = joining.joined() {
-                        self.status = Status::Joined(joined);
-                    }
+        match &mut self.state {
+            State::Joining(joining) => {
+                joining.on_data(data)?;
+                if let Some(joined) = joining.joined() {
+                    self.state = State::Joined(joined);
                 }
-                Status::Joined(joined) => joined.on_data(data),
             }
-
-            // The euphoria server doesn't always disconnect the client
-            // when it would make sense to do so or when the API
-            // specifies it should. This ensures we always disconnect
-            // when it makes sense to do so.
-            match data {
-                Data::DisconnectEvent(_) => return Err("received disconnect-event".into()),
-                Data::LoginEvent(_) => return Err("received login-event".into()),
-                Data::LogoutEvent(_) => return Err("received logout-event".into()),
-                Data::LoginReply(LoginReply { success: true, .. }) => {
-                    return Err("received successful login-reply".into())
-                }
-                Data::LogoutReply(_) => return Err("received logout-reply".into()),
-                _ => {}
-            }
+            State::Joined(joined) => joined.on_data(data),
         }
 
-        // Shovel packets into self.packet_tx
-        self.packet_tx.send(packet)?;
+        // The euphoria server doesn't always disconnect the client when it
+        // would make sense to do so or when the API specifies it should. This
+        // ensures we always disconnect when it makes sense to do so.
+        if matches!(
+            data,
+            Data::DisconnectEvent(_)
+                | Data::LoginEvent(_)
+                | Data::LogoutEvent(_)
+                | Data::LoginReply(LoginReply { success: true, .. })
+                | Data::LogoutReply(_)
+        ) {
+            self.disconnect().await?;
+        }
 
         Ok(())
     }
 
-    async fn on_send_cmd(
+    async fn on_cmd(&mut self, cmd: ConnCommand) -> Result<()> {
+        match cmd {
+            ConnCommand::SendCmd(data, reply_tx) => self.send_cmd(data, reply_tx).await?,
+            ConnCommand::GetState(reply_tx) => {
+                let _ = reply_tx.send(self.state.clone());
+            }
+        }
+        Ok(())
+    }
+
+    async fn await_next_ping(last_ping: Instant, timeout: Duration) {
+        let since_last_ping = last_ping.elapsed();
+        if let Some(remaining) = timeout.checked_sub(since_last_ping) {
+            time::sleep(remaining).await;
+        }
+    }
+
+    async fn on_ping(&mut self) -> Result<()> {
+        // Check previous pings
+        if self.last_ws_ping_payload.is_some() && !self.last_ws_ping_replied_to {
+            self.disconnect().await?;
+        }
+        if self.last_euph_ping_payload.is_some() && !self.last_euph_ping_replied_to {
+            self.disconnect().await?;
+        }
+
+        let now = OffsetDateTime::now_utc();
+
+        // Send new ws ping
+        let ws_payload = now.unix_timestamp_nanos().to_be_bytes().to_vec();
+        self.last_ws_ping_payload = Some(ws_payload.clone());
+        self.ws.send(tungstenite::Message::Ping(ws_payload)).await?;
+
+        // Send new euph ping
+        let euph_payload = Time::new(now);
+        self.last_euph_ping_payload = Some(euph_payload);
+        let (tx, _) = oneshot::channel();
+        self.send_cmd(Ping { time: euph_payload }.into(), tx)
+            .await?;
+
+        self.last_ping = Instant::now();
+
+        Ok(())
+    }
+
+    async fn send_cmd(
         &mut self,
         data: Data,
         reply_tx: oneshot::Sender<PendingReply<ParsedPacket>>,
-    ) -> InternalResult<()> {
+    ) -> Result<()> {
         // Overkill of universe-heat-death-like proportions
         self.last_id = self.last_id.wrapping_add(1);
         let id = format!("{}", self.last_id);
@@ -431,14 +525,14 @@ impl State {
         .into_packet()?;
 
         let msg = tungstenite::Message::Text(serde_json::to_string(&packet)?);
-        self.ws_tx.send(msg).await?;
+        self.ws.send(msg).await?;
 
         let _ = reply_tx.send(self.replies.wait_for(id));
 
         Ok(())
     }
 
-    async fn on_send_rpl(&mut self, id: Option<String>, data: Data) -> InternalResult<()> {
+    async fn send_rpl(&mut self, id: Option<String>, data: Data) -> Result<()> {
         let packet = ParsedPacket {
             id,
             r#type: data.packet_type(),
@@ -448,168 +542,57 @@ impl State {
         .into_packet()?;
 
         let msg = tungstenite::Message::Text(serde_json::to_string(&packet)?);
-        self.ws_tx.send(msg).await?;
+        self.ws.send(msg).await?;
 
         Ok(())
     }
 
-    fn on_status(&mut self, reply_tx: oneshot::Sender<Status>) {
-        let _ = reply_tx.send(self.status.clone());
+    async fn disconnect(&mut self) -> Result<Infallible> {
+        let _ = self.ws.close(None).await;
+        Err(Error::ConnectionClosed)
     }
 
-    async fn do_pings(&mut self, event_tx: &mpsc::UnboundedSender<Event>) -> InternalResult<()> {
-        // Check old ws ping
-        if self.last_ws_ping.is_some() && !self.last_ws_ping_replied_to {
-            return Err("server missed ws ping".into());
+    pub fn wrap(ws: WsStream, timeout: Duration) -> Self {
+        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
+        Self {
+            ws,
+            last_id: 0,
+            replies: Replies::new(timeout),
+
+            conn_tx: ConnTx { cmd_tx },
+            cmd_rx,
+
+            last_ping: Instant::now(), // Wait a bit before first pings
+            last_ws_ping_payload: None,
+            last_ws_ping_replied_to: false,
+            last_euph_ping_payload: None,
+            last_euph_ping_replied_to: false,
+
+            state: State::Joining(Joining::default()),
+        }
+    }
+
+    pub async fn connect(
+        domain: &str,
+        room: &str,
+        human: bool,
+        cookies: Option<HeaderValue>,
+        timeout: Duration,
+    ) -> tungstenite::Result<(Self, Vec<HeaderValue>)> {
+        let human = if human { "?h=1" } else { "" };
+        let uri = format!("wss://{domain}/room/{room}/ws{human}");
+        let mut request = uri.into_client_request().expect("valid request");
+        if let Some(cookies) = cookies {
+            request.headers_mut().append(header::COOKIE, cookies);
         }
 
-        // Send new ws ping
-        let ws_payload = self.ws_ping_counter.to_be_bytes().to_vec();
-        self.ws_ping_counter = self.ws_ping_counter.wrapping_add(1);
-        self.last_ws_ping = Some(ws_payload.clone());
-        self.last_ws_ping_replied_to = false;
-        self.ws_tx
-            .send(tungstenite::Message::Ping(ws_payload))
-            .await?;
-
-        // Check old euph ping
-        if self.last_euph_ping.is_some() && self.last_euph_ping != self.last_euph_pong {
-            return Err("server missed euph ping".into());
-        }
-
-        // Send new euph ping
-        let euph_payload = Time::now();
-        self.last_euph_ping = Some(euph_payload);
-        let (tx, _) = oneshot::channel();
-        event_tx.send(Event::send_cmd(Ping { time: euph_payload }, tx))?;
-
-        Ok(())
+        let (ws, response) = tokio_tungstenite::connect_async(request).await?;
+        let (mut parts, _) = response.into_parts();
+        let set_cookies = match parts.headers.entry(header::SET_COOKIE) {
+            header::Entry::Occupied(entry) => entry.remove_entry_mult().1.collect(),
+            header::Entry::Vacant(_) => vec![],
+        };
+        let rx = Self::wrap(ws, timeout);
+        Ok((rx, set_cookies))
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct ConnTx {
-    #[allow(dead_code)]
-    canary: mpsc::UnboundedSender<Infallible>,
-    event_tx: mpsc::UnboundedSender<Event>,
-}
-
-impl ConnTx {
-    async fn finish_send<C>(
-        rx: oneshot::Receiver<PendingReply<ParsedPacket>>,
-    ) -> Result<C::Reply, Error>
-    where
-        C: Command,
-        C::Reply: TryFrom<Data>,
-    {
-        let pending_reply = rx
-            .await
-            // This should only happen if something goes wrong during encoding
-            // of the packet or while sending it through the websocket. Assuming
-            // the first doesn't happen, the connection is probably closed.
-            .map_err(|_| Error::ConnectionClosed)?;
-        let data = pending_reply
-            .get()
-            .await
-            .map_err(|e| match e {
-                replies::Error::TimedOut => Error::TimedOut,
-                replies::Error::Canceled => Error::ConnectionClosed,
-            })?
-            .content
-            .map_err(Error::Euph)?;
-        data.try_into().map_err(|_| Error::IncorrectReplyType)
-    }
-
-    /// Send a command to the server.
-    ///
-    /// Returns a future containing the server's reply. This future does not
-    /// have to be awaited and can be safely ignored if you are not interested
-    /// in the reply.
-    ///
-    /// This function may return before the command was sent. To ensure that it
-    /// was sent, await the returned future first.
-    ///
-    /// When called multiple times, this function guarantees that the commands
-    /// are sent in the order that the function is called.
-    pub fn send<C>(&self, cmd: C) -> impl Future<Output = Result<C::Reply, Error>>
-    where
-        C: Command + Into<Data>,
-        C::Reply: TryFrom<Data>,
-    {
-        let (tx, rx) = oneshot::channel();
-        let _ = self.event_tx.send(Event::SendCmd(cmd.into(), tx));
-        Self::finish_send::<C>(rx)
-    }
-
-    pub async fn status(&self) -> Result<Status, Error> {
-        let (tx, rx) = oneshot::channel();
-        self.event_tx
-            .send(Event::Status(tx))
-            .map_err(|_| Error::ConnectionClosed)?;
-        rx.await.map_err(|_| Error::ConnectionClosed)
-    }
-}
-
-#[derive(Debug)]
-pub struct ConnRx {
-    #[allow(dead_code)]
-    canary: oneshot::Sender<Infallible>,
-    packet_rx: mpsc::UnboundedReceiver<ParsedPacket>,
-}
-
-impl ConnRx {
-    pub async fn recv(&mut self) -> Option<ParsedPacket> {
-        self.packet_rx.recv().await
-    }
-}
-
-pub fn wrap(ws: WsStream, timeout: Duration) -> (ConnTx, ConnRx) {
-    let (tx_canary_tx, tx_canary_rx) = mpsc::unbounded_channel();
-    let (rx_canary_tx, rx_canary_rx) = oneshot::channel();
-    let (event_tx, event_rx) = mpsc::unbounded_channel();
-    let (packet_tx, packet_rx) = mpsc::unbounded_channel();
-
-    task::spawn(State::run(
-        ws,
-        timeout,
-        tx_canary_rx,
-        rx_canary_rx,
-        event_tx.clone(),
-        event_rx,
-        packet_tx,
-    ));
-
-    let tx = ConnTx {
-        canary: tx_canary_tx,
-        event_tx,
-    };
-    let rx = ConnRx {
-        canary: rx_canary_tx,
-        packet_rx,
-    };
-    (tx, rx)
-}
-
-pub async fn connect(
-    domain: &str,
-    room: &str,
-    human: bool,
-    cookies: Option<HeaderValue>,
-    timeout: Duration,
-) -> tungstenite::Result<(ConnTx, ConnRx, Vec<HeaderValue>)> {
-    let human = if human { "?h=1" } else { "" };
-    let uri = format!("wss://{domain}/room/{room}/ws{human}");
-    let mut request = uri.into_client_request().expect("valid request");
-    if let Some(cookies) = cookies {
-        request.headers_mut().append(header::COOKIE, cookies);
-    }
-
-    let (ws, response) = tokio_tungstenite::connect_async(request).await?;
-    let (mut parts, _) = response.into_parts();
-    let set_cookies = match parts.headers.entry(header::SET_COOKIE) {
-        header::Entry::Occupied(entry) => entry.remove_entry_mult().1.collect(),
-        header::Entry::Vacant(_) => vec![],
-    };
-    let (tx, rx) = wrap(ws, timeout);
-    Ok((tx, rx, set_cookies))
 }

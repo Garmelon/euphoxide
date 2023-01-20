@@ -14,8 +14,11 @@ Procedure when bumping the version number:
 ## Unreleased
 
 ### Added
-- `Status` conversion utility methods
+- `State` conversion utility methods
 - `Time::new` constructor
+
+### Changed
+- Rewrite `conn` module (backwards-imcompatible)
 
 ## v0.2.0 - 2022-12-10
 
@@ -23,7 +26,7 @@ Procedure when bumping the version number:
 - `euphoxide::connect`
 
 ### Changed
-- Updated dependencies in backwards-incompatible way
+- Updated dependencies (backwards-incompatible)
 
 ## v0.1.0 - 2022-10-23
 

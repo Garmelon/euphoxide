@@ -49,12 +49,17 @@ pub struct Replies<I, R> {
     pending: HashMap<I, Sender<R>>,
 }
 
+// TODO Relax bounds
 impl<I: Eq + Hash, R> Replies<I, R> {
     pub fn new(timeout: Duration) -> Self {
         Self {
             timeout,
             pending: HashMap::new(),
         }
+    }
+
+    pub fn timeout(&self) -> Duration {
+        self.timeout
     }
 
     pub fn wait_for(&mut self, id: I) -> PendingReply<R> {
