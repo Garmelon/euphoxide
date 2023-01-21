@@ -4,9 +4,10 @@ version = "0.2.0"
 edition = "2021"
 
 [features]
-bot = []
+bot = ["dep:cookie"]
 
 [dependencies]
+cookie = { version = "0.16.2", optional = true }
 futures-util = { version = "0.3.25", default-features = false, features = ["sink"] }
 log = "0.4.17"
 serde = { version = "1.0.149", features = ["derive"] }

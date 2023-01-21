@@ -2,14 +2,16 @@
 //!
 //! See [`Instance`] for more details.
 
-// TODO Cookies
-
 use std::future::Future;
+use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use cookie::{Cookie, CookieJar};
 use log::{debug, warn};
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
+use tokio_tungstenite::tungstenite::http::HeaderValue;
 
 use crate::api::packet::ParsedPacket;
 use crate::api::{Auth, AuthOption, Data, Nick};
@@ -30,6 +32,8 @@ pub struct Config {
     pub room: String,
     /// Whether the instance should connect as human or bot.
     pub human: bool,
+    /// Cookies to use and update when connecting.
+    pub cookies: Arc<Mutex<CookieJar>>,
     /// Username to set upon connecting.
     pub username: Option<String>,
     /// Password to use if room requires authentication.
@@ -43,6 +47,7 @@ impl Config {
             domain: EUPH_DOMAIN.to_string(),
             room: room.to_string(),
             human: false,
+            cookies: Arc::new(Mutex::new(CookieJar::new())),
             username: None,
             password: None,
         }
@@ -157,6 +162,30 @@ impl Instance {
         }
     }
 
+    fn get_cookies(config: &Config) -> HeaderValue {
+        let guard = config.cookies.lock().unwrap();
+        let cookies = guard
+            .iter()
+            .map(|c| format!("{}", c.stripped()))
+            .collect::<Vec<_>>()
+            .join("; ");
+        drop(guard);
+        cookies.try_into().unwrap()
+    }
+
+    fn set_cookies(config: &Config, cookies: Vec<HeaderValue>) {
+        debug!("Updating cookies");
+        let mut guard = config.cookies.lock().unwrap();
+
+        for cookie in cookies {
+            if let Ok(cookie) = cookie.to_str() {
+                if let Ok(cookie) = Cookie::from_str(cookie) {
+                    guard.add(cookie);
+                }
+            }
+        }
+    }
+
     async fn run_once<F, Fut>(
         config: &Config,
         on_event: &mut F,
@@ -167,12 +196,18 @@ impl Instance {
         Fut: Future<Output = Result<(), ()>>,
     {
         debug!("{}: Connecting...", config.name);
-        let (mut conn, _) =
-            Conn::connect(&config.domain, &config.room, config.human, None, TIMEOUT)
-                .await
-                .ok()?;
-        let conn_tx = conn.tx().clone();
+        let (mut conn, cookies) = Conn::connect(
+            &config.domain,
+            &config.room,
+            config.human,
+            Some(Self::get_cookies(config)),
+            TIMEOUT,
+        )
+        .await
+        .ok()?;
+        Self::set_cookies(config, cookies);
 
+        let conn_tx = conn.tx().clone();
         let result = select! {
             r = Self::receive::<F, Fut>(config, &mut conn, on_event) => r,
             _ = Self::handle_requests(request_rx, &conn_tx) => Ok(()),
