@@ -8,6 +8,7 @@ bot = []
 
 [dependencies]
 futures-util = { version = "0.3.25", default-features = false, features = ["sink"] }
+log = "0.4.17"
 serde = { version = "1.0.149", features = ["derive"] }
 serde_json = "1.0.89"
 time = { version = "0.3.17", features = ["serde"] }

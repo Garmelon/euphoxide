@@ -19,6 +19,7 @@ Procedure when bumping the version number:
 - Finding, replacing and removing emoji in text
 - `State` conversion utility methods
 - `Time::new` constructor
+- Debug logging using the `log` crate
 
 ### Changed
 - Rewrite `conn` module (backwards-imcompatible)
