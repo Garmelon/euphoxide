@@ -16,9 +16,9 @@
 # are separated by one or more spaces. If mp code points are listed, the emoji
 # does not correspond to any unicode code points.
 
-#######################################
-## emoji-annotation-to-unicode emoji ##
-#######################################
+#################################
+## emoji-annotation-to-unicode ##
+#################################
 
 +1 1f44d
 -1 1f44e
@@ -895,6 +895,7 @@ simple_smile 1f642
 ##################
 ## custom emoji ##
 ##################
+
 +1
 bronze
 bronze!?
