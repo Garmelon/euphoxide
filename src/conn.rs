@@ -9,8 +9,8 @@ use std::{error, fmt, result};
 use ::time::OffsetDateTime;
 use futures_util::SinkExt;
 use tokio::net::TcpStream;
+use tokio::select;
 use tokio::sync::{mpsc, oneshot};
-use tokio::{select, time};
 use tokio_stream::StreamExt;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::http::{header, HeaderValue};
@@ -485,10 +485,8 @@ impl Conn {
     }
 
     async fn await_next_ping(last_ping: Instant, timeout: Duration) {
-        let since_last_ping = last_ping.elapsed();
-        if let Some(remaining) = timeout.checked_sub(since_last_ping) {
-            time::sleep(remaining).await;
-        }
+        let next_ping = last_ping + timeout;
+        tokio::time::sleep_until(next_ping.into()).await;
     }
 
     async fn on_ping(&mut self) -> Result<()> {
