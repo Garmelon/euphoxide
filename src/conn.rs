@@ -68,7 +68,7 @@ impl From<serde_json::Error> for Error {
 
 impl error::Error for Error {}
 
-type Result<T> = result::Result<T, Error>;
+pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
 pub struct Joining {
