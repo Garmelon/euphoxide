@@ -5,7 +5,6 @@ use std::time::Duration;
 use std::{error, result};
 
 use tokio::sync::oneshot::{self, Receiver, Sender};
-use tokio::time;
 
 #[derive(Debug)]
 pub enum Error {
@@ -34,8 +33,7 @@ pub struct PendingReply<R> {
 
 impl<R> PendingReply<R> {
     pub async fn get(self) -> Result<R> {
-        let result = time::timeout(self.timeout, self.result).await;
-        match result {
+        match tokio::time::timeout(self.timeout, self.result).await {
             Err(_) => Err(Error::TimedOut),
             Ok(Err(_)) => Err(Error::Canceled),
             Ok(Ok(value)) => Ok(value),
