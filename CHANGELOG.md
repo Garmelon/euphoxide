@@ -14,9 +14,8 @@ Procedure when bumping the version number:
 ## Unreleased
 
 ### Added
-- `bot` subodule (enable the `bot` feature to use)
-- All emoji known to the vanilla client
-- Finding, replacing and removing emoji in text
+- `bot` submodule (enable the `bot` feature to use)
+- `Emoji` struct for finding replacing and removing emoji in text
 - `State` conversion utility methods
 - `Time::new` constructor
 - Debug logging using the `log` crate

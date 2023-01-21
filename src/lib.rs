@@ -13,8 +13,9 @@ pub mod api;
 #[cfg(feature = "bot")]
 pub mod bot;
 pub mod conn;
-pub mod emoji;
+mod emoji;
 mod huehash;
 mod replies;
 
+pub use emoji::Emoji;
 pub use huehash::{nick_hue, nick_hue_without_removing_emoji};
