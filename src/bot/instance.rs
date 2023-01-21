@@ -12,6 +12,7 @@ use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::api::packet::ParsedPacket;
+use crate::api::{Auth, AuthOption, Data, Nick};
 use crate::conn::{Conn, ConnTx, State};
 
 const EUPH_DOMAIN: &str = "euphoria.io";
@@ -186,6 +187,27 @@ impl Instance {
                     state: conn.state().clone(),
                 },
             };
+
+            match &event.packet.content {
+                Ok(Data::SnapshotEvent(_)) => {
+                    if let Some(username) = &config.username {
+                        let name = username.to_string();
+                        let _ = conn.tx().send(Nick { name });
+                    }
+                }
+                Ok(Data::BounceEvent(_)) => {
+                    if let Some(password) = &config.password {
+                        let cmd = Auth {
+                            r#type: AuthOption::Passcode,
+                            passcode: Some(password.to_string()),
+                        };
+                        let _ = conn.tx().send(cmd);
+                    } else {
+                        break;
+                    }
+                }
+                _ => {}
+            }
 
             if on_event(event).await.is_err() {
                 break;
