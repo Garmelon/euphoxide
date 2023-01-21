@@ -153,6 +153,10 @@ async fn on_event(event: Event) -> Result<(), ()> {
 
 #[tokio::main]
 async fn main() {
-    let _instance = Config::new("test").username("TestBot").build(on_event);
+    let _instance = Config::new("test")
+        .username(Some("TestBot"))
+        .build(on_event);
+
+    // Once the instance is dropped, it stops, so we wait indefinitely here.
     tokio::time::sleep(Duration::from_secs(u64::MAX)).await;
 }

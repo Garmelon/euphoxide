@@ -63,23 +63,23 @@ impl Config {
         self
     }
 
-    pub fn human(mut self) -> Self {
-        self.human = true;
+    pub fn human(mut self, human: bool) -> Self {
+        self.human = human;
         self
     }
 
-    pub fn bot(mut self) -> Self {
-        self.human = false;
+    pub fn cookies(mut self, cookies: Arc<Mutex<CookieJar>>) -> Self {
+        self.cookies = cookies;
         self
     }
 
-    pub fn username<S: ToString>(mut self, username: S) -> Self {
-        self.username = Some(username.to_string());
+    pub fn username<S: ToString>(mut self, username: Option<S>) -> Self {
+        self.username = username.map(|s| s.to_string());
         self
     }
 
-    pub fn password<S: ToString>(mut self, password: S) -> Self {
-        self.password = Some(password.to_string());
+    pub fn password<S: ToString>(mut self, password: Option<S>) -> Self {
+        self.password = password.map(|s| s.to_string());
         self
     }
 
