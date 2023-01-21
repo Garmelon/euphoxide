@@ -94,12 +94,14 @@ impl Config {
 
 /// Snapshot of an instance at a specific point in time, usually after just
 /// receiving a packet.
+#[derive(Debug)]
 pub struct Snapshot {
     pub config: Config,
     pub conn_tx: ConnTx,
     pub state: State,
 }
 
+#[derive(Debug)]
 pub struct Event {
     pub packet: ParsedPacket,
     pub snapshot: Snapshot,
@@ -115,6 +117,7 @@ pub struct Event {
 /// An instance has a unique name used for logging and identifying the instance.
 /// The room name can be used as the instance name if there is never more than
 /// one instance per room.
+#[derive(Debug)]
 pub struct Instance {
     config: Config,
     request_tx: mpsc::UnboundedSender<oneshot::Sender<ConnTx>>,
