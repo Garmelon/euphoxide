@@ -1,9 +1,9 @@
 //! Similar to the `testbot_manual` example, but using [`Instance`] to connect
-//! to the room (and toreconnect).
+//! to the room (and to reconnect).
 
 use euphoxide::api::packet::ParsedPacket;
 use euphoxide::api::{Data, Nick, Send};
-use euphoxide::bot::instance::{ServerConfig, Snapshot};
+use euphoxide::bot::instance::{Event, ServerConfig, Snapshot};
 use time::OffsetDateTime;
 use tokio::sync::mpsc;
 
@@ -161,8 +161,10 @@ async fn main() {
         });
 
     while let Some(event) = rx.recv().await {
-        if on_packet(event.packet, event.snapshot).await.is_err() {
-            break;
+        if let Event::Packet(_config, packet, snapshot) = event {
+            if on_packet(packet, snapshot).await.is_err() {
+                break;
+            }
         }
     }
 }

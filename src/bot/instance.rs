@@ -157,11 +157,16 @@ pub struct Snapshot {
     pub state: State,
 }
 
+// Most of the time, the largest variant (`Packet`) is sent. The size of this
+// enum is not critical anyways since it's not constructed that often.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
-pub struct Event {
-    pub config: InstanceConfig,
-    pub packet: ParsedPacket,
-    pub snapshot: Snapshot,
+pub enum Event {
+    Connecting(InstanceConfig),
+    Connected(InstanceConfig, ConnTx),
+    Packet(InstanceConfig, ParsedPacket, Snapshot),
+    Disconnected(InstanceConfig),
+    Stopped(InstanceConfig),
 }
 
 /// A single instance of a bot in a single room.
@@ -176,7 +181,6 @@ pub struct Event {
 /// one instance per room.
 #[derive(Debug)]
 pub struct Instance {
-    // TODO Share Arc<InstanceConfig> instead of cloning InstanceConfig everywhere
     config: InstanceConfig,
     request_tx: mpsc::UnboundedSender<oneshot::Sender<ConnTx>>,
 }
@@ -226,7 +230,10 @@ impl Instance {
     {
         // TODO Only delay reconnecting if previous reconnect attempt failed
         loop {
+            on_event(Event::Connecting(config.clone()));
             Self::run_once::<F>(&config, &on_event, &mut request_rx).await;
+            on_event(Event::Disconnected(config.clone()));
+
             debug!(
                 "{}: Waiting {} seconds before reconnecting",
                 config.name,
@@ -279,6 +286,7 @@ impl Instance {
         .await
         .ok()?;
         Self::set_cookies(config, cookies);
+        on_event(Event::Connected(config.clone(), conn.tx().clone()));
 
         let conn_tx = conn.tx().clone();
         let result = select! {
@@ -306,13 +314,8 @@ impl Instance {
                 conn_tx: conn.tx().clone(),
                 state: conn.state().clone(),
             };
-            let event = Event {
-                config: config.clone(),
-                packet,
-                snapshot,
-            };
 
-            match &event.packet.content {
+            match &packet.content {
                 Ok(Data::SnapshotEvent(_)) => {
                     if let Some(username) = &config.username {
                         debug!("{}: Setting nick to username {}", config.name, username);
@@ -336,7 +339,7 @@ impl Instance {
                 _ => {}
             }
 
-            on_event(event);
+            on_event(Event::Packet(config.clone(), packet, snapshot));
         }
 
         Ok(())
