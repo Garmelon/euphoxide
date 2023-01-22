@@ -130,18 +130,16 @@ impl InstanceConfig {
     }
 }
 
-// TODO Make Snapshot a Conn snapshot, not an Instance snapshot
-/// Snapshot of an instance at a specific point in time, usually after just
-/// receiving a packet.
-#[derive(Debug)]
+/// Snapshot of a [`Conn`]'s state immediately after receiving a packet.
+#[derive(Debug, Clone)]
 pub struct Snapshot {
-    pub config: InstanceConfig,
     pub conn_tx: ConnTx,
     pub state: State,
 }
 
 #[derive(Debug)]
 pub struct Event {
+    pub config: InstanceConfig,
     pub packet: ParsedPacket,
     pub snapshot: Snapshot,
 }
@@ -284,13 +282,14 @@ impl Instance {
     {
         loop {
             let packet = conn.recv().await?;
+            let snapshot = Snapshot {
+                conn_tx: conn.tx().clone(),
+                state: conn.state().clone(),
+            };
             let event = Event {
+                config: config.clone(),
                 packet,
-                snapshot: Snapshot {
-                    config: config.clone(),
-                    conn_tx: conn.tx().clone(),
-                    state: conn.state().clone(),
-                },
+                snapshot,
             };
 
             match &event.packet.content {
