@@ -2,6 +2,7 @@
 //!
 //! See [`Instance`] for more details.
 
+use std::fmt;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -18,7 +19,7 @@ use crate::conn::{self, Conn, ConnTx, State};
 
 /// Settings that are usually shared between all instances connecting to a
 /// specific server.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ServerConfig {
     /// How long to wait for the server until an operation is considered timed
     /// out.
@@ -71,6 +72,25 @@ impl Default for ServerConfig {
             domain: "euphoria.io".to_string(),
             cookies: Arc::new(Mutex::new(CookieJar::new())),
         }
+    }
+}
+
+struct Hidden;
+
+impl fmt::Debug for Hidden {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<hidden>")
+    }
+}
+
+impl fmt::Debug for ServerConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ServerConfig")
+            .field("timeout", &self.timeout)
+            .field("reconnect_delay", &self.reconnect_delay)
+            .field("domain", &self.domain)
+            .field("cookies", &Hidden)
+            .finish()
     }
 }
 
