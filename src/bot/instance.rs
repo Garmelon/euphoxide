@@ -32,7 +32,7 @@ pub struct ServerConfig {
     /// How long to wait until reconnecting after an unsuccessful attempt to
     /// connect.
     pub reconnect_delay: Duration,
-    /// Domain name, to be used with [`euphoxide::connect`].
+    /// Domain name, to be used with [`Conn::connect`].
     pub domain: String,
     /// Cookies to use when connecting. They are updated with the server's reply
     /// after successful connection attempts.
@@ -101,7 +101,7 @@ pub struct InstanceConfig {
     pub server: ServerConfig,
     /// Unique name of this instance.
     pub name: String,
-    /// Room name, to be used with [`euphoxide::connect`].
+    /// Room name, to be used with [`Conn::connect`].
     pub room: String,
     /// Whether the instance should connect as human or bot.
     pub human: bool,
@@ -143,6 +143,9 @@ impl InstanceConfig {
         self
     }
 
+    /// Create a new instance using this config.
+    ///
+    /// See [`Instance::new`] for more details.
     pub fn build<F>(self, on_event: F) -> Instance
     where
         F: Fn(Event) + Send + Sync + 'static,
@@ -161,6 +164,17 @@ pub struct Snapshot {
 // Most of the time, the largest variant (`Packet`) is sent. The size of this
 // enum is not critical anyways since it's not constructed that often.
 #[allow(clippy::large_enum_variant)]
+/// An event emitted by an [`Instance`].
+///
+/// Events are emitted by a single instance following this schema, written in
+/// pseudo-regex syntax:
+/// ```text
+/// (Connecting (Connected Packet*)? Disconnected)* Stopped
+/// ```
+///
+/// In particular, this means that every [`Self::Connecting`] is always followed
+/// by exactly one [`Self::Disconnected`], and that [`Self::Stopped`] is always
+/// the last event and is always sent exactly once per instance.
 #[derive(Debug)]
 pub enum Event {
     Connecting(InstanceConfig),
@@ -193,6 +207,14 @@ enum RunError {
 /// An instance has a unique name used for logging and identifying the instance.
 /// The room name can be used as the instance name if there is never more than
 /// one instance per room.
+///
+/// An instance can be created using [`Instance::new`] or using
+/// [`InstanceConfig::build`].
+///
+/// An instance can be stopped using [`Instance::stop`] or by dropping it. In
+/// either case, the last event the instance sends will be an
+/// [`Event::Stopped`]. If it is not stopped using one of these two ways, it
+/// will continue to run and reconnect indefinitely.
 #[derive(Debug)]
 pub struct Instance {
     config: InstanceConfig,
@@ -215,6 +237,13 @@ impl Instance {
     // handler encounters errors, there's usually other ways to tell the same. Make
     // the event handler ignore the errors and stop the instance in that other way.
 
+    /// Create a new instance based on an [`InstanceConfig`].
+    ///
+    /// The `on_event` parameter is called whenever the instance wants to emit
+    /// an [`Event`]. It must not block for long. See [`Event`] for more details
+    /// on the events and the order in which they are emitted.
+    ///
+    /// [`InstanceConfig::build`] can be used in place of this function.
     pub fn new<F>(config: InstanceConfig, on_event: F) -> Self
     where
         F: Fn(Event) + Send + Sync + 'static,
@@ -229,14 +258,28 @@ impl Instance {
         &self.config
     }
 
+    /// Retrieve the instance's current connection.
+    ///
+    /// Returns `None` if the instance is currently not connected, or has
+    /// stopped running.
     pub async fn conn_tx(&self) -> Option<ConnTx> {
         let (tx, rx) = oneshot::channel();
         let _ = self.request_tx.send(Request::GetConnTx(tx));
         rx.await.ok()
     }
 
+    /// Stop the instance.
+    ///
+    /// For more info on stopping instances, see [`Instance`].
     pub fn stop(&self) {
         let _ = self.request_tx.send(Request::Stop);
+    }
+
+    /// Whether this instance is stopped.
+    ///
+    /// For more info on stopping instances, see [`Instance`].
+    pub fn stopped(&self) -> bool {
+        self.request_tx.is_closed()
     }
 
     async fn run<F: Fn(Event)>(
