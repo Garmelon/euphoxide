@@ -170,6 +170,11 @@ pub enum Event {
     Stopped(InstanceConfig),
 }
 
+enum Request {
+    GetConnTx(oneshot::Sender<ConnTx>),
+    Stop,
+}
+
 /// An error that occurred inside an [`Instance`] while it was running.
 enum RunError {
     StoppedManually,
@@ -191,7 +196,7 @@ enum RunError {
 #[derive(Debug)]
 pub struct Instance {
     config: InstanceConfig,
-    request_tx: mpsc::UnboundedSender<oneshot::Sender<ConnTx>>,
+    request_tx: mpsc::UnboundedSender<Request>,
 }
 
 impl Instance {
@@ -226,14 +231,18 @@ impl Instance {
 
     pub async fn conn_tx(&self) -> Option<ConnTx> {
         let (tx, rx) = oneshot::channel();
-        let _ = self.request_tx.send(tx);
+        let _ = self.request_tx.send(Request::GetConnTx(tx));
         rx.await.ok()
+    }
+
+    pub fn stop(&self) {
+        let _ = self.request_tx.send(Request::Stop);
     }
 
     async fn run<F>(
         config: InstanceConfig,
         on_event: F,
-        mut request_rx: mpsc::UnboundedReceiver<oneshot::Sender<ConnTx>>,
+        mut request_rx: mpsc::UnboundedReceiver<Request>,
     ) where
         F: Fn(Event),
     {
@@ -304,7 +313,7 @@ impl Instance {
     async fn run_once<F>(
         config: &InstanceConfig,
         on_event: &F,
-        request_rx: &mut mpsc::UnboundedReceiver<oneshot::Sender<ConnTx>>,
+        request_rx: &mut mpsc::UnboundedReceiver<Request>,
     ) -> Result<(), RunError>
     where
         F: Fn(Event),
@@ -375,11 +384,16 @@ impl Instance {
     }
 
     async fn handle_requests(
-        request_rx: &mut mpsc::UnboundedReceiver<oneshot::Sender<ConnTx>>,
+        request_rx: &mut mpsc::UnboundedReceiver<Request>,
         conn_tx: &ConnTx,
     ) -> RunError {
         while let Some(request) = request_rx.recv().await {
-            let _ = request.send(conn_tx.clone());
+            match request {
+                Request::GetConnTx(tx) => {
+                    let _ = tx.send(conn_tx.clone());
+                }
+                Request::Stop => return RunError::StoppedManually,
+            }
         }
         RunError::InstanceDropped
     }
