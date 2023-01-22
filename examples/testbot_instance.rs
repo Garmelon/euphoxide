@@ -1,11 +1,11 @@
 //! Similar to the `testbot_manual` example, but using [`Instance`] to connect
 //! to the room (and toreconnect).
 
-use std::time::Duration;
-
+use euphoxide::api::packet::ParsedPacket;
 use euphoxide::api::{Data, Nick, Send};
-use euphoxide::bot::instance::{Config, Event};
+use euphoxide::bot::instance::{Config, Snapshot};
 use time::OffsetDateTime;
+use tokio::sync::mpsc;
 
 const NICK: &str = "TestBot";
 const HELP: &str = "I'm an example bot for https://github.com/Garmelon/euphoxide";
@@ -43,17 +43,14 @@ fn format_delta(delta: time::Duration) -> String {
     parts.join(" ")
 }
 
-async fn on_event(event: Event) -> Result<(), ()> {
-    let data = match event.packet.content {
+async fn on_packet(packet: ParsedPacket, snapshot: Snapshot) -> Result<(), ()> {
+    let data = match packet.content {
         Ok(data) => data,
         Err(err) => {
-            println!("Error for {}: {err}", event.packet.r#type);
+            println!("Error for {}: {err}", packet.r#type);
             return Err(());
         }
     };
-
-    let conn_tx = event.snapshot.conn_tx;
-    let state = event.snapshot.state;
 
     match data {
         Data::HelloEvent(ev) => println!("Connected with id {}", ev.session.id),
@@ -69,7 +66,7 @@ async fn on_event(event: Event) -> Result<(), ()> {
             // We only need to do this because we want to log the result of
             // the nick command. Otherwise, we could've just called
             // tx.send() synchronously and ignored the returned Future.
-            let conn_tx_clone = conn_tx.clone();
+            let conn_tx_clone = snapshot.conn_tx.clone();
             tokio::spawn(async move {
                 // Awaiting the future returned by the send command lets you
                 // (type-safely) access the server's reply.
@@ -109,7 +106,7 @@ async fn on_event(event: Event) -> Result<(), ()> {
             } else if content == format!("!help @{NICK}") {
                 reply = Some(HELP.to_string());
             } else if content == format!("!uptime @{NICK}") {
-                if let Some(joined) = state.joined() {
+                if let Some(joined) = snapshot.state.joined() {
                     let delta = OffsetDateTime::now_utc() - joined.since;
                     reply = Some(format!("/me has been up for {}", format_delta(delta)));
                 }
@@ -125,7 +122,8 @@ async fn on_event(event: Event) -> Result<(), ()> {
                 // would be a race between sending the message and closing
                 // the connection as the send function can return before the
                 // message has actually been sent.
-                let _ = conn_tx
+                let _ = snapshot
+                    .conn_tx
                     .send(Send {
                         content: "/me dies".to_string(),
                         parent: Some(event.0.id),
@@ -138,7 +136,7 @@ async fn on_event(event: Event) -> Result<(), ()> {
                 // If you are not interested in the result, you can just
                 // throw away the future returned by the send function.
                 println!("Sending reply...");
-                let _ = conn_tx.send(Send {
+                let _ = snapshot.conn_tx.send(Send {
                     content: reply,
                     parent: Some(event.0.id),
                 });
@@ -153,10 +151,17 @@ async fn on_event(event: Event) -> Result<(), ()> {
 
 #[tokio::main]
 async fn main() {
+    let (tx, mut rx) = mpsc::unbounded_channel();
+
     let _instance = Config::new("test")
         .username(Some("TestBot"))
-        .build(on_event);
+        .build(move |e| {
+            let _ = tx.send(e);
+        });
 
-    // Once the instance is dropped, it stops, so we wait indefinitely here.
-    tokio::time::sleep(Duration::from_secs(u64::MAX)).await;
+    while let Some(event) = rx.recv().await {
+        if on_packet(event.packet, event.snapshot).await.is_err() {
+            break;
+        }
+    }
 }

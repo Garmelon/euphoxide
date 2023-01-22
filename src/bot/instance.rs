@@ -2,7 +2,6 @@
 //!
 //! See [`Instance`] for more details.
 
-use std::future::Future;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -39,6 +38,21 @@ pub struct Config {
     /// Password to use if room requires authentication.
     pub password: Option<String>,
 }
+
+// Previously, the event callback was asynchronous and would return a result. It
+// was called in-line to calling Conn::recv. The idea was that the instance
+// would stop if the event handler returned Err. This was, however, not even
+// implemented correctly and the instance would just reconnect.
+//
+// The new event handler is synchronous. This way, it becomes harder to
+// accidentally block Conn::recv, for example by waiting for a channel with
+// limited capacity. If async code must be executed upon receiving a command,
+// the user can start a task from inside the handler.
+//
+// The new event handler does not return anything. This makes the code nicer. In
+// the use cases I'm thinking of, it should not be a problem: If the event
+// handler encounters errors, there's usually other ways to tell the same. Make
+// the event handler ignore the errors and stop the instance in that other way.
 
 impl Config {
     pub fn new<S: ToString>(room: S) -> Self {
@@ -83,10 +97,9 @@ impl Config {
         self
     }
 
-    pub fn build<F, Fut>(self, on_event: F) -> Instance
+    pub fn build<F>(self, on_event: F) -> Instance
     where
-        F: FnMut(Event) -> Fut + Send + 'static,
-        Fut: Future<Output = Result<(), ()>> + Send + 'static,
+        F: Fn(Event) + Send + Sync + 'static,
     {
         Instance::new(self, on_event)
     }
@@ -124,14 +137,13 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn new<F, Fut>(config: Config, on_event: F) -> Self
+    pub fn new<F>(config: Config, on_event: F) -> Self
     where
-        F: FnMut(Event) -> Fut + Send + 'static,
-        Fut: Future<Output = Result<(), ()>> + Send + 'static,
+        F: Fn(Event) + Send + Sync + 'static,
     {
         debug!("{}: Created with config {config:?}", config.name);
         let (request_tx, request_rx) = mpsc::unbounded_channel();
-        tokio::spawn(Self::run::<F, Fut>(config.clone(), on_event, request_rx));
+        tokio::spawn(Self::run::<F>(config.clone(), on_event, request_rx));
         Self { config, request_tx }
     }
 
@@ -145,17 +157,16 @@ impl Instance {
         rx.await.ok()
     }
 
-    async fn run<F, Fut>(
+    async fn run<F>(
         config: Config,
-        mut on_event: F,
+        on_event: F,
         mut request_rx: mpsc::UnboundedReceiver<oneshot::Sender<ConnTx>>,
     ) where
-        F: FnMut(Event) -> Fut,
-        Fut: Future<Output = Result<(), ()>>,
+        F: Fn(Event),
     {
         // TODO Only delay reconnecting if previous reconnect attempt failed
         loop {
-            Self::run_once::<F, Fut>(&config, &mut on_event, &mut request_rx).await;
+            Self::run_once::<F>(&config, &on_event, &mut request_rx).await;
             debug!(
                 "{}: Waiting {} seconds before reconnecting",
                 config.name,
@@ -189,14 +200,13 @@ impl Instance {
         }
     }
 
-    async fn run_once<F, Fut>(
+    async fn run_once<F>(
         config: &Config,
-        on_event: &mut F,
+        on_event: &F,
         request_rx: &mut mpsc::UnboundedReceiver<oneshot::Sender<ConnTx>>,
     ) -> Option<()>
     where
-        F: FnMut(Event) -> Fut,
-        Fut: Future<Output = Result<(), ()>>,
+        F: Fn(Event),
     {
         debug!("{}: Connecting...", config.name);
         let (mut conn, cookies) = Conn::connect(
@@ -212,7 +222,7 @@ impl Instance {
 
         let conn_tx = conn.tx().clone();
         let result = select! {
-            r = Self::receive::<F, Fut>(config, &mut conn, on_event) => r,
+            r = Self::receive::<F>(config, &mut conn, on_event) => r,
             _ = Self::handle_requests(request_rx, &conn_tx) => Ok(()),
         };
         if let Err(err) = result {
@@ -226,10 +236,9 @@ impl Instance {
         Some(())
     }
 
-    async fn receive<F, Fut>(config: &Config, conn: &mut Conn, on_event: &mut F) -> conn::Result<()>
+    async fn receive<F>(config: &Config, conn: &mut Conn, on_event: &F) -> conn::Result<()>
     where
-        F: FnMut(Event) -> Fut,
-        Fut: Future<Output = Result<(), ()>>,
+        F: Fn(Event),
     {
         loop {
             let packet = conn.recv().await?;
@@ -266,10 +275,7 @@ impl Instance {
                 _ => {}
             }
 
-            if on_event(event).await.is_err() {
-                warn!("{}: on_event handler returned Err(())", config.name);
-                break;
-            }
+            on_event(event);
         }
 
         Ok(())
