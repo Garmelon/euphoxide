@@ -3,7 +3,7 @@
 
 use euphoxide::api::packet::ParsedPacket;
 use euphoxide::api::{Data, Nick, Send};
-use euphoxide::bot::instance::{Config, Snapshot};
+use euphoxide::bot::instance::{ServerConfig, Snapshot};
 use time::OffsetDateTime;
 use tokio::sync::mpsc;
 
@@ -153,7 +153,8 @@ async fn on_packet(packet: ParsedPacket, snapshot: Snapshot) -> Result<(), ()> {
 async fn main() {
     let (tx, mut rx) = mpsc::unbounded_channel();
 
-    let _instance = Config::new("test")
+    let _instance = ServerConfig::default()
+        .room("test")
         .username(Some("TestBot"))
         .build(move |e| {
             let _ = tx.send(e);

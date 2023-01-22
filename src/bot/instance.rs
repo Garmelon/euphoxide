@@ -16,52 +16,87 @@ use crate::api::packet::ParsedPacket;
 use crate::api::{Auth, AuthOption, Data, Nick};
 use crate::conn::{self, Conn, ConnTx, State};
 
-const EUPH_DOMAIN: &str = "euphoria.io";
-const TIMEOUT: Duration = Duration::from_secs(30);
-const RECONNECT: Duration = Duration::from_secs(30);
-
-/// Settings that are not changed over the life time of the instance.
+/// Settings that are usually shared between all instances connecting to a
+/// specific server.
 #[derive(Debug, Clone)]
-pub struct Config {
-    /// Unique name of this instance.
-    pub name: String,
+pub struct ServerConfig {
+    /// How long to wait for the server until an operation is considered timed
+    /// out.
+    ///
+    /// This timeout applies to waiting for reply packets to command packets
+    /// sent by the client, as well as operations like connecting or closing a
+    /// connection.
+    pub timeout: Duration,
+    /// How long to wait until reconnecting after an unsuccessful attempt to
+    /// connect.
+    pub reconnect_delay: Duration,
     /// Domain name, to be used with [`euphoxide::connect`].
     pub domain: String,
+    /// Cookies to use when connecting. They are updated with the server's reply
+    /// after successful connection attempts.
+    pub cookies: Arc<Mutex<CookieJar>>,
+}
+
+impl ServerConfig {
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    pub fn reconnect_delay(mut self, reconnect_delay: Duration) -> Self {
+        self.reconnect_delay = reconnect_delay;
+        self
+    }
+
+    pub fn domain<S: ToString>(mut self, domain: S) -> Self {
+        self.domain = domain.to_string();
+        self
+    }
+
+    pub fn cookies(mut self, cookies: Arc<Mutex<CookieJar>>) -> Self {
+        self.cookies = cookies;
+        self
+    }
+
+    pub fn room<S: ToString>(self, room: S) -> InstanceConfig {
+        InstanceConfig::new(self, room)
+    }
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            timeout: Duration::from_secs(30),
+            reconnect_delay: Duration::from_secs(30),
+            domain: "euphoria.io".to_string(),
+            cookies: Arc::new(Mutex::new(CookieJar::new())),
+        }
+    }
+}
+
+/// Settings that are usually specific to a single instance.
+#[derive(Debug, Clone)]
+pub struct InstanceConfig {
+    pub server: ServerConfig,
+    /// Unique name of this instance.
+    pub name: String,
     /// Room name, to be used with [`euphoxide::connect`].
     pub room: String,
     /// Whether the instance should connect as human or bot.
     pub human: bool,
-    /// Cookies to use and update when connecting.
-    pub cookies: Arc<Mutex<CookieJar>>,
     /// Username to set upon connecting.
     pub username: Option<String>,
     /// Password to use if room requires authentication.
     pub password: Option<String>,
 }
 
-// Previously, the event callback was asynchronous and would return a result. It
-// was called in-line to calling Conn::recv. The idea was that the instance
-// would stop if the event handler returned Err. This was, however, not even
-// implemented correctly and the instance would just reconnect.
-//
-// The new event handler is synchronous. This way, it becomes harder to
-// accidentally block Conn::recv, for example by waiting for a channel with
-// limited capacity. If async code must be executed upon receiving a command,
-// the user can start a task from inside the handler.
-//
-// The new event handler does not return anything. This makes the code nicer. In
-// the use cases I'm thinking of, it should not be a problem: If the event
-// handler encounters errors, there's usually other ways to tell the same. Make
-// the event handler ignore the errors and stop the instance in that other way.
-
-impl Config {
-    pub fn new<S: ToString>(room: S) -> Self {
+impl InstanceConfig {
+    pub fn new<S: ToString>(server: ServerConfig, room: S) -> Self {
         Self {
+            server,
             name: room.to_string(),
-            domain: EUPH_DOMAIN.to_string(),
             room: room.to_string(),
             human: false,
-            cookies: Arc::new(Mutex::new(CookieJar::new())),
             username: None,
             password: None,
         }
@@ -72,18 +107,8 @@ impl Config {
         self
     }
 
-    pub fn domain<S: ToString>(mut self, domain: S) -> Self {
-        self.domain = domain.to_string();
-        self
-    }
-
     pub fn human(mut self, human: bool) -> Self {
         self.human = human;
-        self
-    }
-
-    pub fn cookies(mut self, cookies: Arc<Mutex<CookieJar>>) -> Self {
-        self.cookies = cookies;
         self
     }
 
@@ -105,11 +130,12 @@ impl Config {
     }
 }
 
+// TODO Make Snapshot a Conn snapshot, not an Instance snapshot
 /// Snapshot of an instance at a specific point in time, usually after just
 /// receiving a packet.
 #[derive(Debug)]
 pub struct Snapshot {
-    pub config: Config,
+    pub config: InstanceConfig,
     pub conn_tx: ConnTx,
     pub state: State,
 }
@@ -132,12 +158,28 @@ pub struct Event {
 /// one instance per room.
 #[derive(Debug)]
 pub struct Instance {
-    config: Config,
+    // TODO Share Arc<InstanceConfig> instead of cloning InstanceConfig everywhere
+    config: InstanceConfig,
     request_tx: mpsc::UnboundedSender<oneshot::Sender<ConnTx>>,
 }
 
 impl Instance {
-    pub fn new<F>(config: Config, on_event: F) -> Self
+    // Previously, the event callback was asynchronous and would return a result. It
+    // was called in-line to calling Conn::recv. The idea was that the instance
+    // would stop if the event handler returned Err. This was, however, not even
+    // implemented correctly and the instance would just reconnect.
+    //
+    // The new event handler is synchronous. This way, it becomes harder to
+    // accidentally block Conn::recv, for example by waiting for a channel with
+    // limited capacity. If async code must be executed upon receiving a command,
+    // the user can start a task from inside the handler.
+    //
+    // The new event handler does not return anything. This makes the code nicer. In
+    // the use cases I'm thinking of, it should not be a problem: If the event
+    // handler encounters errors, there's usually other ways to tell the same. Make
+    // the event handler ignore the errors and stop the instance in that other way.
+
+    pub fn new<F>(config: InstanceConfig, on_event: F) -> Self
     where
         F: Fn(Event) + Send + Sync + 'static,
     {
@@ -147,7 +189,7 @@ impl Instance {
         Self { config, request_tx }
     }
 
-    pub fn config(&self) -> &Config {
+    pub fn config(&self) -> &InstanceConfig {
         &self.config
     }
 
@@ -158,7 +200,7 @@ impl Instance {
     }
 
     async fn run<F>(
-        config: Config,
+        config: InstanceConfig,
         on_event: F,
         mut request_rx: mpsc::UnboundedReceiver<oneshot::Sender<ConnTx>>,
     ) where
@@ -170,14 +212,14 @@ impl Instance {
             debug!(
                 "{}: Waiting {} seconds before reconnecting",
                 config.name,
-                RECONNECT.as_secs()
+                config.server.reconnect_delay.as_secs(),
             );
-            tokio::time::sleep(RECONNECT).await;
+            tokio::time::sleep(config.server.reconnect_delay).await;
         }
     }
 
-    fn get_cookies(config: &Config) -> HeaderValue {
-        let guard = config.cookies.lock().unwrap();
+    fn get_cookies(config: &InstanceConfig) -> HeaderValue {
+        let guard = config.server.cookies.lock().unwrap();
         let cookies = guard
             .iter()
             .map(|c| format!("{}", c.stripped()))
@@ -187,9 +229,9 @@ impl Instance {
         cookies.try_into().unwrap()
     }
 
-    fn set_cookies(config: &Config, cookies: Vec<HeaderValue>) {
+    fn set_cookies(config: &InstanceConfig, cookies: Vec<HeaderValue>) {
         debug!("Updating cookies");
-        let mut guard = config.cookies.lock().unwrap();
+        let mut guard = config.server.cookies.lock().unwrap();
 
         for cookie in cookies {
             if let Ok(cookie) = cookie.to_str() {
@@ -201,7 +243,7 @@ impl Instance {
     }
 
     async fn run_once<F>(
-        config: &Config,
+        config: &InstanceConfig,
         on_event: &F,
         request_rx: &mut mpsc::UnboundedReceiver<oneshot::Sender<ConnTx>>,
     ) -> Option<()>
@@ -210,11 +252,11 @@ impl Instance {
     {
         debug!("{}: Connecting...", config.name);
         let (mut conn, cookies) = Conn::connect(
-            &config.domain,
+            &config.server.domain,
             &config.room,
             config.human,
             Some(Self::get_cookies(config)),
-            TIMEOUT,
+            config.server.timeout,
         )
         .await
         .ok()?;
@@ -236,7 +278,7 @@ impl Instance {
         Some(())
     }
 
-    async fn receive<F>(config: &Config, conn: &mut Conn, on_event: &F) -> conn::Result<()>
+    async fn receive<F>(config: &InstanceConfig, conn: &mut Conn, on_event: &F) -> conn::Result<()>
     where
         F: Fn(Event),
     {
