@@ -239,13 +239,11 @@ impl Instance {
         let _ = self.request_tx.send(Request::Stop);
     }
 
-    async fn run<F>(
+    async fn run<F: Fn(Event)>(
         config: InstanceConfig,
         on_event: F,
         mut request_rx: mpsc::UnboundedReceiver<Request>,
-    ) where
-        F: Fn(Event),
-    {
+    ) {
         loop {
             debug!("{}: Connecting...", config.name);
 
@@ -310,14 +308,11 @@ impl Instance {
         }
     }
 
-    async fn run_once<F>(
+    async fn run_once<F: Fn(Event)>(
         config: &InstanceConfig,
         on_event: &F,
         request_rx: &mut mpsc::UnboundedReceiver<Request>,
-    ) -> Result<(), RunError>
-    where
-        F: Fn(Event),
-    {
+    ) -> Result<(), RunError> {
         let (mut conn, cookies) = Conn::connect(
             &config.server.domain,
             &config.room,
@@ -338,14 +333,11 @@ impl Instance {
         }
     }
 
-    async fn receive<F>(
+    async fn receive<F: Fn(Event)>(
         config: &InstanceConfig,
         conn: &mut Conn,
         on_event: &F,
-    ) -> Result<(), RunError>
-    where
-        F: Fn(Event),
-    {
+    ) -> Result<(), RunError> {
         loop {
             let packet = conn.recv().await.map_err(RunError::Conn)?;
             let snapshot = Snapshot {
