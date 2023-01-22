@@ -298,7 +298,7 @@ impl Instance {
     }
 
     fn set_cookies(config: &InstanceConfig, cookies: Vec<HeaderValue>) {
-        debug!("Updating cookies");
+        debug!("{}: Updating cookies", config.name);
         let mut guard = config.server.cookies.lock().unwrap();
 
         for cookie in cookies {
