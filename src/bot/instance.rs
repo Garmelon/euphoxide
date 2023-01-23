@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use cookie::{Cookie, CookieJar};
-use log::{debug, warn};
+use log::{debug, info, warn};
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio_tungstenite::tungstenite;
@@ -438,6 +438,13 @@ impl Instance {
                     } else {
                         warn!("{}: Auth required but no password configured", config.name);
                         break;
+                    }
+                }
+                Ok(Data::DisconnectEvent(ev)) => {
+                    if ev.reason == "authentication changed" {
+                        info!("{}: Disconnected because {}", config.name, ev.reason);
+                    } else {
+                        warn!("{}: Disconnected because {}", config.name, ev.reason);
                     }
                 }
                 _ => {}
