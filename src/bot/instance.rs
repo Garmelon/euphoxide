@@ -170,6 +170,15 @@ pub struct Snapshot {
     pub state: State,
 }
 
+impl Snapshot {
+    fn from_conn(conn: &Conn) -> Self {
+        Self {
+            conn_tx: conn.tx().clone(),
+            state: conn.state().clone(),
+        }
+    }
+}
+
 // Most of the time, the largest variant (`Packet`) is sent. The size of this
 // enum is not critical anyways since it's not constructed that often.
 #[allow(clippy::large_enum_variant)]
@@ -187,7 +196,7 @@ pub struct Snapshot {
 #[derive(Debug)]
 pub enum Event {
     Connecting(InstanceConfig),
-    Connected(InstanceConfig, ConnTx),
+    Connected(InstanceConfig, Snapshot),
     Packet(InstanceConfig, ParsedPacket, Snapshot),
     Disconnected(InstanceConfig),
     Stopped(InstanceConfig),
@@ -388,7 +397,7 @@ impl Instance {
         .map_err(RunError::CouldNotConnect)?;
 
         Self::set_cookies(config, cookies);
-        on_event(Event::Connected(config.clone(), conn.tx().clone()));
+        on_event(Event::Connected(config.clone(), Snapshot::from_conn(&conn)));
 
         let conn_tx = conn.tx().clone();
         select! {
@@ -404,10 +413,7 @@ impl Instance {
     ) -> Result<(), RunError> {
         loop {
             let packet = conn.recv().await.map_err(RunError::Conn)?;
-            let snapshot = Snapshot {
-                conn_tx: conn.tx().clone(),
-                state: conn.state().clone(),
-            };
+            let snapshot = Snapshot::from_conn(conn);
 
             match &packet.content {
                 Ok(Data::SnapshotEvent(snapshot)) => {
