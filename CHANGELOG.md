@@ -14,16 +14,24 @@ Procedure when bumping the version number:
 ## Unreleased
 
 ### Added
-- `bot` submodule (enable the `bot` feature to use)
-- `Emoji` struct for finding replacing and removing emoji in text
-- `State` conversion utility methods
-- `Time::new` constructor
+- `bot` feature
+- `euphoxide::bot` module (enable the `bot` feature to use)
+- `euphoxide::Emoji` for finding, replacing and removing colon-delimited emoji in text
+- `euphoxide::api::Time::new`
+- `euphoxide::nick_hue_without_removing_emoji`
 - Debug logging using the `log` crate
+- `testbot_instance` example using the new `euphoxide::bot::instance::Instance`
+- VSCode project settings
 
 ### Changed
-- Rewrite `conn` module (backwards-imcompatible)
-- Take emoji into account when calculating nick hue using `nick_hue` (backwards-incompatible)
-- Rename `nick_hue` to `nick_hue_without_removing_emoji`
+- `euphoxide::conn` module redesigned and rewritten (backwards-incompatible)
+- `euphoxide::nick_hue` takes emoji into account (backwards-incompatible)
+    - `euphoxide::nick_hue_without_removing_emoji` has the old behaviour
+- Renamed `testbot` example to `testbot_manual`
+
+### Removed
+- `euphoxide::connect` (see `euphoxide::conn::Conn::connect`)
+- `euphoxide::wrap` (see `euphoxide::conn::Conn::wrap`)
 
 ## v0.2.0 - 2022-12-10
 
