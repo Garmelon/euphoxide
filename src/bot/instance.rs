@@ -184,6 +184,18 @@ pub enum Event {
     Stopped(InstanceConfig),
 }
 
+impl Event {
+    pub fn config(&self) -> &InstanceConfig {
+        match self {
+            Self::Connecting(config) => config,
+            Self::Connected(config, _) => config,
+            Self::Packet(config, _, _) => config,
+            Self::Disconnected(config) => config,
+            Self::Stopped(config) => config,
+        }
+    }
+}
+
 enum Request {
     GetConnTx(oneshot::Sender<ConnTx>),
     Stop,
