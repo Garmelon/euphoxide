@@ -107,6 +107,9 @@ pub struct InstanceConfig {
     pub human: bool,
     /// Username to set upon connecting.
     pub username: Option<String>,
+    /// Whether to set the username even if the server reports that the session
+    /// already has a username set.
+    pub force_username: bool,
     /// Password to use if room requires authentication.
     pub password: Option<String>,
 }
@@ -119,6 +122,7 @@ impl InstanceConfig {
             room: room.to_string(),
             human: false,
             username: None,
+            force_username: false,
             password: None,
         }
     }
@@ -135,6 +139,11 @@ impl InstanceConfig {
 
     pub fn username<S: ToString>(mut self, username: Option<S>) -> Self {
         self.username = username.map(|s| s.to_string());
+        self
+    }
+
+    pub fn force_username(mut self, force_username: bool) -> Self {
+        self.force_username = force_username;
         self
     }
 
@@ -401,11 +410,15 @@ impl Instance {
             };
 
             match &packet.content {
-                Ok(Data::SnapshotEvent(_)) => {
+                Ok(Data::SnapshotEvent(snapshot)) => {
                     if let Some(username) = &config.username {
-                        debug!("{}: Setting nick to username {}", config.name, username);
-                        let name = username.to_string();
-                        let _ = conn.tx().send(Nick { name });
+                        if config.force_username || snapshot.nick.is_none() {
+                            debug!("{}: Setting nick to username {}", config.name, username);
+                            let name = username.to_string();
+                            let _ = conn.tx().send(Nick { name });
+                        } else if let Some(nick) = &snapshot.nick {
+                            debug!("{}: Not setting nick, already set to {}", config.name, nick);
+                        }
                     }
                 }
                 Ok(Data::BounceEvent(_)) => {
