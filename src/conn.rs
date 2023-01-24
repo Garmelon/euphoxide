@@ -517,11 +517,13 @@ impl Conn {
         // Send new ws ping
         let ws_payload = now.unix_timestamp_nanos().to_be_bytes().to_vec();
         self.last_ws_ping_payload = Some(ws_payload.clone());
+        self.last_ws_ping_replied_to = false;
         self.ws.send(tungstenite::Message::Ping(ws_payload)).await?;
 
         // Send new euph ping
         let euph_payload = Time::new(now);
         self.last_euph_ping_payload = Some(euph_payload);
+        self.last_euph_ping_replied_to = false;
         let (tx, _) = oneshot::channel();
         self.send_cmd(Ping { time: euph_payload }.into(), tx)
             .await?;
