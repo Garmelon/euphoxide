@@ -58,6 +58,14 @@ pub struct Commands<B, E> {
 }
 
 impl<B, E> Commands<B, E> {
+    pub fn new() -> Self {
+        Self {
+            global: HashMap::new(),
+            general: HashMap::new(),
+            specific: HashMap::new(),
+        }
+    }
+
     /// Global commands always respond. They override any specific or general
     /// commands of the same name.
     ///
@@ -206,6 +214,12 @@ impl<B, E> Commands<B, E> {
         }
 
         Ok(false)
+    }
+}
+
+impl<B, E> Default for Commands<B, E> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
