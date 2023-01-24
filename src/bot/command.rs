@@ -76,10 +76,10 @@ impl Context {
 }
 
 #[async_trait]
-pub trait Command<B> {
+pub trait Command<B, E> {
     fn description(&self) -> Option<String> {
         None
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B);
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E>;
 }

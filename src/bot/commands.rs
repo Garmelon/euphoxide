@@ -46,18 +46,18 @@ pub struct CommandInfo {
     pub visible: bool,
 }
 
-struct CommandWrapper<B> {
-    command: Box<dyn Command<B>>,
+struct CommandWrapper<B, E> {
+    command: Box<dyn Command<B, E>>,
     visible: bool,
 }
 
-pub struct Commands<B> {
-    global: HashMap<String, CommandWrapper<B>>,
-    general: HashMap<String, CommandWrapper<B>>,
-    specific: HashMap<String, CommandWrapper<B>>,
+pub struct Commands<B, E> {
+    global: HashMap<String, CommandWrapper<B, E>>,
+    general: HashMap<String, CommandWrapper<B, E>>,
+    specific: HashMap<String, CommandWrapper<B, E>>,
 }
 
-impl<B> Commands<B> {
+impl<B, E> Commands<B, E> {
     /// Global commands always respond. They override any specific or general
     /// commands of the same name.
     ///
@@ -65,7 +65,7 @@ impl<B> Commands<B> {
     pub fn global<S, C>(mut self, name: S, command: C, visible: bool) -> Self
     where
         S: ToString,
-        C: Command<B> + 'static,
+        C: Command<B, E> + 'static,
     {
         let command = Box::new(command);
         let info = CommandWrapper { command, visible };
@@ -80,7 +80,7 @@ impl<B> Commands<B> {
     pub fn general<S, C>(mut self, name: S, command: C, visible: bool) -> Self
     where
         S: ToString,
-        C: Command<B> + 'static,
+        C: Command<B, E> + 'static,
     {
         let command = Box::new(command);
         let info = CommandWrapper { command, visible };
@@ -92,7 +92,7 @@ impl<B> Commands<B> {
     pub fn specific<S, C>(mut self, name: S, command: C, visible: bool) -> Self
     where
         S: ToString,
-        C: Command<B> + 'static,
+        C: Command<B, E> + 'static,
     {
         let command = Box::new(command);
         let info = CommandWrapper { command, visible };
@@ -149,20 +149,20 @@ impl<B> Commands<B> {
         packet: &ParsedPacket,
         snapshot: &Snapshot,
         bot: &mut B,
-    ) -> bool {
+    ) -> Result<bool, E> {
         let msg = match &packet.content {
             Ok(Data::SendEvent(SendEvent(msg))) => msg,
-            _ => return false,
+            _ => return Ok(false),
         };
 
         let joined = match &snapshot.state {
-            conn::State::Joining(_) => return false,
+            conn::State::Joining(_) => return Ok(false),
             conn::State::Joined(joined) => joined.clone(),
         };
 
         let (cmd_name, rest) = match parse_command(&msg.content) {
             Some(parsed) => parsed,
-            None => return false,
+            None => return Ok(false),
         };
 
         let mut ctx = Context {
@@ -175,8 +175,8 @@ impl<B> Commands<B> {
 
         if let Some(wrapper) = self.global.get(cmd_name) {
             ctx.kind = Kind::Global;
-            wrapper.command.execute(rest, msg, &ctx, bot).await;
-            return true;
+            wrapper.command.execute(rest, msg, &ctx, bot).await?;
+            return Ok(true);
         }
 
         if let Some((cmd_nick, rest)) = parse_specific(rest) {
@@ -185,8 +185,8 @@ impl<B> Commands<B> {
                 let cmd_nick_norm = normalize_specific_nick(cmd_nick);
                 if nick_norm == cmd_nick_norm {
                     ctx.kind = Kind::Specific;
-                    wrapper.command.execute(rest, msg, &ctx, bot).await;
-                    return true;
+                    wrapper.command.execute(rest, msg, &ctx, bot).await?;
+                    return Ok(true);
                 }
             }
 
@@ -196,16 +196,16 @@ impl<B> Commands<B> {
             //
             // To call a specific command with a mention as its first positional
             // argument, -- can be used.
-            return false;
+            return Ok(false);
         }
 
         if let Some(wrapper) = self.general.get(cmd_name) {
             ctx.kind = Kind::General;
-            wrapper.command.execute(rest, msg, &ctx, bot).await;
-            return true;
+            wrapper.command.execute(rest, msg, &ctx, bot).await?;
+            return Ok(true);
         }
 
-        false
+        Ok(false)
     }
 }
 

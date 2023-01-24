@@ -2,14 +2,21 @@ use async_trait::async_trait;
 use clap::{CommandFactory, Parser};
 
 use crate::api::Message;
+use crate::conn;
 
 use super::{Command, Context};
 
 #[async_trait]
-pub trait ClapCommand<B> {
+pub trait ClapCommand<B, E> {
     type Args;
 
-    async fn execute(&self, args: Self::Args, msg: &Message, ctx: &Context, bot: &mut B);
+    async fn execute(
+        &self,
+        args: Self::Args,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<(), E>;
 }
 
 /// Parse bash-like quoted arguments separated by whitespace.
@@ -92,22 +99,23 @@ fn parse_quoted_args(text: &str) -> Result<Vec<String>, &'static str> {
 pub struct Clap<C>(pub C);
 
 #[async_trait]
-impl<B, C> Command<B> for Clap<C>
+impl<B, E, C> Command<B, E> for Clap<C>
 where
     B: Send,
-    C: ClapCommand<B> + Send + Sync,
+    E: From<conn::Error>,
+    C: ClapCommand<B, E> + Send + Sync,
     C::Args: Parser + Send,
 {
     fn description(&self) -> Option<String> {
         C::Args::command().get_about().map(|s| format!("{s}"))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,
             Err(err) => {
-                let _ = ctx.reply(msg.id, err);
-                return;
+                ctx.reply(msg.id, err).await?;
+                return Ok(());
             }
         };
 
@@ -116,8 +124,8 @@ where
         let args = match C::Args::try_parse_from(args) {
             Ok(args) => args,
             Err(err) => {
-                let _ = ctx.reply(msg.id, format!("{}", err.render()));
-                return;
+                ctx.reply(msg.id, format!("{}", err.render())).await?;
+                return Ok(());
             }
         };
 
