@@ -408,7 +408,7 @@ impl Conn {
         match msg {
             tungstenite::Message::Text(text) => {
                 let packet = serde_json::from_str(&text)?;
-                debug!("Received {packet:?}");
+                debug!(target: "euphoxide::conn::full", "Received {packet:?}");
                 let packet = ParsedPacket::from_packet(packet)?;
                 self.on_packet(&packet).await?;
                 return Ok(Some(packet));
@@ -547,7 +547,7 @@ impl Conn {
             throttled: None,
         }
         .into_packet()?;
-        debug!("Sending {packet:?}");
+        debug!(target: "euphoxide::conn::full", "Sending {packet:?}");
 
         let msg = tungstenite::Message::Text(serde_json::to_string(&packet)?);
         self.ws.send(msg).await?;
@@ -565,7 +565,7 @@ impl Conn {
             throttled: None,
         }
         .into_packet()?;
-        debug!("Sending {packet:?}");
+        debug!(target: "euphoxide::conn::full", "Sending {packet:?}");
 
         let msg = tungstenite::Message::Text(serde_json::to_string(&packet)?);
         self.ws.send(msg).await?;
@@ -574,9 +574,8 @@ impl Conn {
     }
 
     async fn disconnect(&mut self) -> Result<Infallible> {
-        // TODO Maybe timeout this
-        let _ = self.ws.close(None).await;
-        debug!("Closed connection gracefully");
+        let _ = tokio::time::timeout(self.replies.timeout(), self.ws.close(None)).await;
+        debug!("Closed connection");
         Err(Error::ConnectionClosed)
     }
 
