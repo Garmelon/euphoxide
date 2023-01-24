@@ -1,7 +1,13 @@
+mod clap;
+
+use std::future::Future;
+
 use async_trait::async_trait;
 
 use crate::api::{self, Message, MessageId};
 use crate::conn::{self, ConnTx, Joined};
+
+pub use self::clap::{Clap, ClapCommand};
 
 use super::instance::InstanceConfig;
 
@@ -38,6 +44,7 @@ impl Kind {
 }
 
 pub struct Context {
+    pub name: String,
     pub kind: Kind,
     pub config: InstanceConfig,
     pub conn_tx: ConnTx,
@@ -45,24 +52,26 @@ pub struct Context {
 }
 
 impl Context {
-    pub async fn send<S: ToString>(&self, content: S) -> Result<Message, conn::Error> {
+    pub fn send<S: ToString>(&self, content: S) -> impl Future<Output = conn::Result<Message>> {
         let cmd = api::Send {
             content: content.to_string(),
             parent: None,
         };
-        Ok(self.conn_tx.send(cmd).await?.0)
+        let reply = self.conn_tx.send(cmd);
+        async move { reply.await.map(|r| r.0) }
     }
 
-    pub async fn reply<S: ToString>(
+    pub fn reply<S: ToString>(
         &self,
         parent: MessageId,
         content: S,
-    ) -> Result<Message, conn::Error> {
+    ) -> impl Future<Output = conn::Result<Message>> {
         let cmd = api::Send {
             content: content.to_string(),
             parent: Some(parent),
         };
-        Ok(self.conn_tx.send(cmd).await?.0)
+        let reply = self.conn_tx.send(cmd);
+        async move { reply.await.map(|r| r.0) }
     }
 }
 

@@ -4,10 +4,10 @@ version = "0.2.0"
 edition = "2021"
 
 [features]
-bot = ["dep:cookie"]
+bot = ["dep:async-trait", "dep:clap", "dep:cookie"]
 
 [dependencies]
-async-trait = "0.1.63"
+async-trait = { version = "0.1.63", optional = true }
 cookie = { version = "0.16.2", optional = true }
 futures-util = { version = "0.3.25", default-features = false, features = ["sink"] }
 log = "0.4.17"
@@ -17,6 +17,12 @@ time = { version = "0.3.17", features = ["serde"] }
 tokio = { version = "1.23.0", features = ["time", "sync", "macros", "rt"] }
 tokio-stream = "0.1.11"
 tokio-tungstenite = { version = "0.18.0", features = ["rustls-tls-native-roots"] }
+
+[dependencies.clap]
+version = "4.1.3"
+optional = true
+default-features = false
+features = ["std"]
 
 [dev-dependencies] # For example bot
 tokio = { version = "1.23.0", features = ["rt-multi-thread"] }

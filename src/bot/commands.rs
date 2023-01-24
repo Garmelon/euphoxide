@@ -166,6 +166,7 @@ impl<B> Commands<B> {
         };
 
         let mut ctx = Context {
+            name: cmd_name.to_string(),
             kind: Kind::Global,
             config: config.clone(),
             conn_tx: snapshot.conn_tx.clone(),
