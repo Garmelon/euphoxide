@@ -7,6 +7,7 @@ edition = "2021"
 bot = ["dep:cookie"]
 
 [dependencies]
+async-trait = "0.1.63"
 cookie = { version = "0.16.2", optional = true }
 futures-util = { version = "0.3.25", default-features = false, features = ["sink"] }
 log = "0.4.17"
