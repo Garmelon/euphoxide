@@ -3,7 +3,6 @@ use clap::Parser;
 
 use crate::api::Message;
 use crate::bot::command::{ClapCommand, Context};
-use crate::bot::commands::CommandInfo;
 use crate::conn;
 
 /// Show full bot help.
@@ -25,7 +24,7 @@ impl FullHelp {
 }
 
 pub trait HasDescriptions {
-    fn descriptions(&self) -> &[CommandInfo];
+    fn descriptions(&self, ctx: &Context) -> Vec<String>;
 }
 
 #[async_trait]
@@ -50,19 +49,9 @@ where
             result.push('\n');
         }
 
-        for help in bot.descriptions() {
-            if !help.visible {
-                continue;
-            }
-
-            let usage = help.kind.usage(&help.name, &ctx.joined.session.name);
-            let line = if let Some(description) = &help.description {
-                format!("{usage} - {description}\n")
-            } else {
-                format!("{usage}\n")
-            };
-
-            result.push_str(&line);
+        for description in bot.descriptions(ctx) {
+            result.push_str(&description);
+            result.push('\n');
         }
 
         if !self.after.is_empty() {

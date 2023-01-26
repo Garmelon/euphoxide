@@ -106,7 +106,7 @@ where
     C: ClapCommand<B, E> + Send + Sync,
     C::Args: Parser + Send,
 {
-    fn description(&self) -> Option<String> {
+    fn description(&self, _ctx: &Context) -> Option<String> {
         C::Args::command().get_about().map(|s| format!("{s}"))
     }
 
@@ -119,7 +119,9 @@ where
             }
         };
 
-        args.insert(0, ctx.kind.usage(&ctx.name, &ctx.joined.session.name));
+        // Hacky, but it should work fine in most cases
+        let usage = msg.content.strip_suffix(arg).unwrap_or("<command>").trim();
+        args.insert(0, usage.to_string());
 
         let args = match C::Args::try_parse_from(args) {
             Ok(args) => args,
