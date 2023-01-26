@@ -1,6 +1,7 @@
 mod bang;
 mod clap;
 mod hidden;
+mod prefixed;
 
 use std::future::Future;
 
@@ -12,6 +13,7 @@ use crate::conn::{self, ConnTx, Joined};
 pub use self::bang::*;
 pub use self::clap::*;
 pub use self::hidden::*;
+pub use self::prefixed::*;
 
 use super::instance::InstanceConfig;
 
