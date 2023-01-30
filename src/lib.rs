@@ -14,8 +14,7 @@ pub mod api;
 pub mod bot;
 pub mod conn;
 mod emoji;
-mod huehash;
+pub mod nick;
 mod replies;
 
 pub use emoji::Emoji;
-pub use huehash::{nick_hue, nick_hue_without_removing_emoji};

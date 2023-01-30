@@ -18,15 +18,14 @@ Procedure when bumping the version number:
 - `euphoxide::bot` module (enable the `bot` feature to use)
 - `euphoxide::Emoji` for finding, replacing and removing colon-delimited emoji in text
 - `euphoxide::api::Time::new`
-- `euphoxide::nick_hue_without_removing_emoji`
+- `euphoxide::nick::hue`
 - Debug logging using the `log` crate
 - `testbot_instance` example using the new `euphoxide::bot::instance::Instance`
 - VSCode project settings
 
 ### Changed
 - `euphoxide::conn` module redesigned and rewritten (backwards-incompatible)
-- `euphoxide::nick_hue` takes emoji into account (backwards-incompatible)
-    - `euphoxide::nick_hue_without_removing_emoji` has the old behaviour
+- `euphoxide::nick_hue` moved to `euphoxide::nick::hue_without_removing_emoji`
 - Renamed `testbot` example to `testbot_manual`
 
 ### Removed
