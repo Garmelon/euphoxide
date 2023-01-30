@@ -32,3 +32,11 @@ tokio = { version = "1.23.0", features = ["rt-multi-thread"] }
 [[example]]
 name = "testbot_instance"
 required-features = ["bot"]
+
+[[example]]
+name = "testbot_instances"
+required-features = ["bot"]
+
+[[example]]
+name = "testbot_commands"
+required-features = ["bot"]
