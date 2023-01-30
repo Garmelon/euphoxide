@@ -243,7 +243,7 @@ pub enum PacketType {
 impl fmt::Display for PacketType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match serde_json::to_value(self) {
-            Ok(Value::String(s)) => write!(f, "{}", s),
+            Ok(Value::String(s)) => write!(f, "{s}"),
             _ => Err(fmt::Error),
         }
     }
@@ -371,7 +371,7 @@ impl FromStr for Snowflake {
 
 impl Serialize for Snowflake {
     fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        format!("{}", self).serialize(serializer)
+        format!("{self}").serialize(serializer)
     }
 }
 
