@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 use crate::api::Message;
+use crate::nick;
 
 use super::{Command, Context};
 
@@ -30,14 +31,6 @@ fn parse_specific(text: &str) -> Option<(&str, &str)> {
         return None;
     }
     Some((name, rest))
-}
-
-fn specific_nick(nick: &str) -> String {
-    nick.replace(char::is_whitespace, "")
-}
-
-fn normalize_specific_nick(nick: &str) -> String {
-    specific_nick(nick).to_lowercase()
 }
 
 pub struct Global<C> {
@@ -170,7 +163,7 @@ where
 {
     fn description(&self, ctx: &Context) -> Option<String> {
         let inner = self.inner.description(ctx)?;
-        let nick = specific_nick(&ctx.joined.session.name);
+        let nick = nick::mention(&ctx.joined.session.name);
         Some(format!("{}{} @{nick} - {inner}", self.prefix, self.name))
     }
 
@@ -191,7 +184,7 @@ where
             None => return Ok(()),
         };
 
-        if normalize_specific_nick(nick) != normalize_specific_nick(&ctx.joined.session.name) {
+        if nick::normalize(nick) != nick::normalize(&ctx.joined.session.name) {
             return Ok(());
         }
 
