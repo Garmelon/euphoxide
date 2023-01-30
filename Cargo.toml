@@ -8,6 +8,7 @@ bot = ["dep:async-trait", "dep:clap", "dep:cookie"]
 
 [dependencies]
 async-trait = { version = "0.1.63", optional = true }
+caseless = "0.2.1"
 cookie = { version = "0.16.2", optional = true }
 futures-util = { version = "0.3.25", default-features = false, features = ["sink"] }
 log = "0.4.17"
@@ -17,6 +18,7 @@ time = { version = "0.3.17", features = ["serde"] }
 tokio = { version = "1.23.0", features = ["time", "sync", "macros", "rt"] }
 tokio-stream = "0.1.11"
 tokio-tungstenite = { version = "0.18.0", features = ["rustls-tls-native-roots"] }
+unicode-normalization = "0.1.22"
 
 [dependencies.clap]
 version = "4.1.3"

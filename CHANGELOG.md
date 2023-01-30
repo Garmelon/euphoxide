@@ -19,6 +19,8 @@ Procedure when bumping the version number:
 - `euphoxide::Emoji` for finding, replacing and removing colon-delimited emoji in text
 - `euphoxide::api::Time::new`
 - `euphoxide::nick::hue`
+- `euphoxide::nick::mention`
+- `euphoxide::nick::normalize`
 - Debug logging using the `log` crate
 - `testbot_instance` example using the new `euphoxide::bot::instance::Instance`
 - VSCode project settings
