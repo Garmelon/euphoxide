@@ -140,7 +140,7 @@ async fn on_packet(packet: ParsedPacket, conn_tx: &ConnTx, state: &State) -> Res
                 // If you are not interested in the result, you can just
                 // throw away the future returned by the send function.
                 println!("Sending reply...");
-                let _ = conn_tx.send(Send {
+                conn_tx.send_only(Send {
                     content: reply,
                     parent: Some(event.0.id),
                 });

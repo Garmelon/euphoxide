@@ -137,7 +137,7 @@ async fn on_packet(packet: ParsedPacket, snapshot: Snapshot) -> Result<(), ()> {
                 // If you are not interested in the result, you can just
                 // throw away the future returned by the send function.
                 println!("Sending reply...");
-                let _ = snapshot.conn_tx.send(Send {
+                snapshot.conn_tx.send_only(Send {
                     content: reply,
                     parent: Some(event.0.id),
                 });

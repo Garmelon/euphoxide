@@ -421,7 +421,7 @@ impl Instance {
                         if config.force_username || snapshot.nick.is_none() {
                             debug!("{}: Setting nick to username {}", config.name, username);
                             let name = username.to_string();
-                            let _ = conn.tx().send(Nick { name });
+                            conn.tx().send_only(Nick { name });
                         } else if let Some(nick) = &snapshot.nick {
                             debug!("{}: Not setting nick, already set to {}", config.name, nick);
                         }
@@ -434,7 +434,7 @@ impl Instance {
                             r#type: AuthOption::Passcode,
                             passcode: Some(password.to_string()),
                         };
-                        let _ = conn.tx().send(cmd);
+                        conn.tx().send_only(cmd);
                     } else {
                         warn!("{}: Auth required but no password configured", config.name);
                         break;

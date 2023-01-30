@@ -330,6 +330,12 @@ impl ConnTx {
         Self::finish_send::<C>(rx)
     }
 
+    /// Like [`Self::send`] but ignoring the server's reply.
+    pub fn send_only<C: Into<Data>>(&self, cmd: C) {
+        let (tx, _) = oneshot::channel();
+        let _ = self.cmd_tx.send(ConnCommand::SendCmd(cmd.into(), tx));
+    }
+
     pub async fn state(&self) -> Result<State> {
         let (tx, rx) = oneshot::channel();
         self.cmd_tx
