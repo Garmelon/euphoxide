@@ -13,6 +13,8 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+## v0.3.0 - 2023-02-11
+
 ### Added
 - `bot` feature
 - `euphoxide::bot` module (enable the `bot` feature to use)
