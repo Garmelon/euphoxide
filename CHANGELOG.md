@@ -13,6 +13,9 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Fixed
+- `!uptime` minute count
+
 ## v0.3.0 - 2023-02-11
 
 ### Added

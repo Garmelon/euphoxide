@@ -30,7 +30,7 @@ pub fn format_time(t: OffsetDateTime) -> String {
 pub fn format_duration(d: Duration) -> String {
     let d_abs = d.abs();
     let days = d_abs.whole_days();
-    let hours = d_abs.whole_hours() % 60;
+    let hours = d_abs.whole_hours() % 24;
     let mins = d_abs.whole_minutes() % 60;
     let secs = d_abs.whole_seconds() % 60;
 
