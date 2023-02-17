@@ -2,6 +2,7 @@
 //!
 //! See [`Instance`] for more details.
 
+use std::convert::Infallible;
 use std::fmt;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -276,6 +277,9 @@ enum RunError {
 pub struct Instance {
     config: InstanceConfig,
     request_tx: mpsc::UnboundedSender<Request>,
+    // In theory, request_tx should be sufficient as canary, but I'm not sure
+    // exactly how to check it during the reconnect timeout.
+    _canary_tx: oneshot::Sender<Infallible>,
 }
 
 impl Instance {
@@ -306,9 +310,22 @@ impl Instance {
         F: Fn(Event) + Send + Sync + 'static,
     {
         idebug!(config, "Created with config {config:?}");
+
         let (request_tx, request_rx) = mpsc::unbounded_channel();
-        tokio::spawn(Self::run::<F>(config.clone(), on_event, request_rx));
-        Self { config, request_tx }
+        let (canary_tx, canary_rx) = oneshot::channel();
+
+        tokio::spawn(Self::run::<F>(
+            config.clone(),
+            on_event,
+            request_rx,
+            canary_rx,
+        ));
+
+        Self {
+            config,
+            request_tx,
+            _canary_tx: canary_tx,
+        }
     }
 
     pub fn config(&self) -> &InstanceConfig {
@@ -342,13 +359,26 @@ impl Instance {
     async fn run<F: Fn(Event)>(
         config: InstanceConfig,
         on_event: F,
+        request_rx: mpsc::UnboundedReceiver<Request>,
+        canary_rx: oneshot::Receiver<Infallible>,
+    ) {
+        select! {
+            _ = Self::stay_connected(&config, &on_event, request_rx) => (),
+            _ = canary_rx => { idebug!(config, "Instance dropped"); },
+        }
+        on_event(Event::Stopped(config))
+    }
+
+    async fn stay_connected<F: Fn(Event)>(
+        config: &InstanceConfig,
+        on_event: &F,
         mut request_rx: mpsc::UnboundedReceiver<Request>,
     ) {
         loop {
             idebug!(config, "Connecting...");
 
             on_event(Event::Connecting(config.clone()));
-            let result = Self::run_once::<F>(&config, &on_event, &mut request_rx).await;
+            let result = Self::run_once::<F>(config, on_event, &mut request_rx).await;
             on_event(Event::Disconnected(config.clone()));
 
             let connected = match result {
@@ -386,8 +416,6 @@ impl Instance {
                 tokio::time::sleep(config.server.reconnect_delay).await;
             }
         }
-
-        on_event(Event::Stopped(config))
     }
 
     fn get_cookies(config: &InstanceConfig) -> HeaderValue {

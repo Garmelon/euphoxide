@@ -19,6 +19,7 @@ Procedure when bumping the version number:
 ### Fixed
 - `!uptime` minute count
 - Instance reconnecting after encountering a 404 (it now stops and logs an error)
+- Instance taking too long to stop when stopped during reconnect delay
 
 ## v0.3.0 - 2023-02-11
 
