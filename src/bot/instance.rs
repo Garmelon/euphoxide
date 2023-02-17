@@ -11,7 +11,7 @@ use cookie::{Cookie, CookieJar};
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio_tungstenite::tungstenite;
-use tokio_tungstenite::tungstenite::http::HeaderValue;
+use tokio_tungstenite::tungstenite::http::{HeaderValue, StatusCode};
 
 use crate::api::packet::ParsedPacket;
 use crate::api::{Auth, AuthOption, Data, Nick};
@@ -362,6 +362,12 @@ impl Instance {
                 }
                 Err(RunError::InstanceDropped) => {
                     idebug!(config, "Instance dropped");
+                    break;
+                }
+                Err(RunError::CouldNotConnect(tungstenite::Error::Http(response)))
+                    if response.status() == StatusCode::NOT_FOUND =>
+                {
+                    iwarn!(config, "Failed to connect: room does not exist");
                     break;
                 }
                 Err(RunError::CouldNotConnect(err)) => {
