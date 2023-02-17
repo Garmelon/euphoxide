@@ -8,7 +8,6 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use cookie::{Cookie, CookieJar};
-use log::{debug, info, warn};
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio_tungstenite::tungstenite;
@@ -17,6 +16,34 @@ use tokio_tungstenite::tungstenite::http::HeaderValue;
 use crate::api::packet::ParsedPacket;
 use crate::api::{Auth, AuthOption, Data, Nick};
 use crate::conn::{self, Conn, ConnTx, State};
+
+macro_rules! ilog {
+    ( $conf:expr, $target:expr, $($arg:tt)+ ) => {
+        ::log::log!(
+            target: &format!("euphoxide::live::{}", $conf.name),
+            $target,
+            $($arg)+
+        );
+    };
+}
+
+macro_rules! idebug {
+    ( $conf:expr, $($arg:tt)+ ) => {
+        ilog!($conf, ::log::Level::Debug, $($arg)+);
+    };
+}
+
+macro_rules! iinfo {
+    ( $conf:expr, $($arg:tt)+ ) => {
+        ilog!($conf, ::log::Level::Info, $($arg)+);
+    };
+}
+
+macro_rules! iwarn {
+    ( $conf:expr, $($arg:tt)+ ) => {
+        ilog!($conf, ::log::Level::Warn, $($arg)+);
+    };
+}
 
 /// Settings that are usually shared between all instances connecting to a
 /// specific server.
@@ -278,7 +305,7 @@ impl Instance {
     where
         F: Fn(Event) + Send + Sync + 'static,
     {
-        debug!("{}: Created with config {config:?}", config.name);
+        idebug!(config, "Created with config {config:?}");
         let (request_tx, request_rx) = mpsc::unbounded_channel();
         tokio::spawn(Self::run::<F>(config.clone(), on_event, request_rx));
         Self { config, request_tx }
@@ -318,7 +345,7 @@ impl Instance {
         mut request_rx: mpsc::UnboundedReceiver<Request>,
     ) {
         loop {
-            debug!("{}: Connecting...", config.name);
+            idebug!(config, "Connecting...");
 
             on_event(Event::Connecting(config.clone()));
             let result = Self::run_once::<F>(&config, &on_event, &mut request_rx).await;
@@ -326,30 +353,30 @@ impl Instance {
 
             let connected = match result {
                 Ok(()) => {
-                    debug!("{}: Connection closed normally", config.name);
+                    idebug!(config, "Connection closed normally");
                     true
                 }
                 Err(RunError::StoppedManually) => {
-                    debug!("{}: Instance stopped manually", config.name);
+                    idebug!(config, "Instance stopped manually");
                     break;
                 }
                 Err(RunError::InstanceDropped) => {
-                    debug!("{}: Instance dropped", config.name);
+                    idebug!(config, "Instance dropped");
                     break;
                 }
                 Err(RunError::CouldNotConnect(err)) => {
-                    warn!("{}: Failed to connect: {err}", config.name);
+                    iwarn!(config, "Failed to connect: {err}");
                     false
                 }
                 Err(RunError::Conn(err)) => {
-                    warn!("{} An error occurred: {err}", config.name);
+                    iwarn!(config, "An error occurred: {err}");
                     true
                 }
             };
 
             if !connected {
                 let s = config.server.reconnect_delay.as_secs();
-                debug!("{}: Waiting {s} seconds before reconnecting", config.name);
+                idebug!(config, "Waiting {s} seconds before reconnecting");
                 tokio::time::sleep(config.server.reconnect_delay).await;
             }
         }
@@ -369,7 +396,7 @@ impl Instance {
     }
 
     fn set_cookies(config: &InstanceConfig, cookies: Vec<HeaderValue>) {
-        debug!("{}: Updating cookies", config.name);
+        idebug!(config, "Updating cookies");
         let mut guard = config.server.cookies.lock().unwrap();
 
         for cookie in cookies {
@@ -419,32 +446,32 @@ impl Instance {
                 Ok(Data::SnapshotEvent(snapshot)) => {
                     if let Some(username) = &config.username {
                         if config.force_username || snapshot.nick.is_none() {
-                            debug!("{}: Setting nick to username {}", config.name, username);
+                            idebug!(config, "Setting nick to username {username}");
                             let name = username.to_string();
                             conn.tx().send_only(Nick { name });
                         } else if let Some(nick) = &snapshot.nick {
-                            debug!("{}: Not setting nick, already set to {}", config.name, nick);
+                            idebug!(config, "Not setting nick, already set to {nick}");
                         }
                     }
                 }
                 Ok(Data::BounceEvent(_)) => {
                     if let Some(password) = &config.password {
-                        debug!("{}: Authenticating with password", config.name);
+                        idebug!(config, "Authenticating with password");
                         let cmd = Auth {
                             r#type: AuthOption::Passcode,
                             passcode: Some(password.to_string()),
                         };
                         conn.tx().send_only(cmd);
                     } else {
-                        warn!("{}: Auth required but no password configured", config.name);
+                        iwarn!(config, "Auth required but no password configured");
                         break;
                     }
                 }
                 Ok(Data::DisconnectEvent(ev)) => {
                     if ev.reason == "authentication changed" {
-                        info!("{}: Disconnected because {}", config.name, ev.reason);
+                        iinfo!(config, "Disconnected because {}", ev.reason);
                     } else {
-                        warn!("{}: Disconnected because {}", config.name, ev.reason);
+                        iwarn!(config, "Disconnected because {}", ev.reason);
                     }
                 }
                 _ => {}

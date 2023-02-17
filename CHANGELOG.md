@@ -13,6 +13,9 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Changed
+- Instances log to target `euphoxide::live::<name>`
+
 ### Fixed
 - `!uptime` minute count
 
