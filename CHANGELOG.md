@@ -13,6 +13,9 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Added
+- `bot::botrulez::Ping` now implements `bot::command::Command`
+
 ### Changed
 - Instances log to target `euphoxide::live::<name>`
 
