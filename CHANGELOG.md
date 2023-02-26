@@ -25,29 +25,29 @@ Procedure when bumping the version number:
 
 ### Added
 - `bot` feature
-- `euphoxide::bot` module (enable the `bot` feature to use)
-- `euphoxide::Emoji` for finding, replacing and removing colon-delimited emoji in text
-- `euphoxide::api::Time::new`
-- `euphoxide::nick::hue`
-- `euphoxide::nick::mention`
-- `euphoxide::nick::normalize`
+- `bot` module (enable the `bot` feature to use)
+- `Emoji` for finding, replacing and removing colon-delimited emoji in text
+- `api::Time::new`
+- `nick::hue`
+- `nick::mention`
+- `nick::normalize`
 - Debug logging using the `log` crate
-- `testbot_instance` example using the new `euphoxide::bot::instance::Instance`
+- `testbot_instance` example using the new `bot::instance::Instance`
 - VSCode project settings
 
 ### Changed
-- `euphoxide::conn` module redesigned and rewritten (backwards-incompatible)
-- `euphoxide::nick_hue` moved to `euphoxide::nick::hue_without_removing_emoji`
+- `conn` module redesigned and rewritten (backwards-incompatible)
+- `nick_hue` moved to `nick::hue_without_removing_emoji`
 - Renamed `testbot` example to `testbot_manual`
 
 ### Removed
-- `euphoxide::connect` (see `euphoxide::conn::Conn::connect`)
-- `euphoxide::wrap` (see `euphoxide::conn::Conn::wrap`)
+- `connect` (see `conn::Conn::connect`)
+- `wrap` (see `conn::Conn::wrap`)
 
 ## v0.2.0 - 2022-12-10
 
 ### Added
-- `euphoxide::connect`
+- `connect`
 
 ### Changed
 - Updated dependencies (backwards-incompatible)
