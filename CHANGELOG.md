@@ -13,6 +13,8 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+## v0.3.1 - 2023-02-26
+
 ### Added
 - `bot::botrulez::FullHelp` now implements `bot::command::Command`
 - `bot::botrulez::Ping` now implements `bot::command::Command`
