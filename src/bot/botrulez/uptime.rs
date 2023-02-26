@@ -7,20 +7,6 @@ use crate::api::Message;
 use crate::bot::command::{ClapCommand, Context};
 use crate::conn;
 
-/// Show how long the bot has been online.
-#[derive(Parser)]
-pub struct Args {
-    /// Show how long the bot has been connected without interruption.
-    #[arg(long, short)]
-    connected: bool,
-}
-
-pub struct Uptime;
-
-pub trait HasStartTime {
-    fn start_time(&self) -> OffsetDateTime;
-}
-
 pub fn format_time(t: OffsetDateTime) -> String {
     let t = t.to_offset(UtcOffset::UTC);
     let format = format_description!("[year]-[month]-[day] [hour]:[minute]:[second] UTC");
@@ -57,6 +43,20 @@ pub fn format_duration(d: Duration) -> String {
     } else {
         format!("{segments} ago")
     }
+}
+
+pub struct Uptime;
+
+pub trait HasStartTime {
+    fn start_time(&self) -> OffsetDateTime;
+}
+
+/// Show how long the bot has been online.
+#[derive(Parser)]
+pub struct Args {
+    /// Show how long the bot has been connected without interruption.
+    #[arg(long, short)]
+    connected: bool,
 }
 
 #[async_trait]
