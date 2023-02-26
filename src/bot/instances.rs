@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use super::instance::{Instance, ServerConfig};
+use super::instance::{self, Instance, ServerConfig};
 
 /// A convenient way to keep a [`ServerConfig`] and some [`Instance`]s.
 pub struct Instances {
@@ -24,6 +24,18 @@ impl Instances {
 
     pub fn instances(&self) -> impl Iterator<Item = &Instance> {
         self.instances.values()
+    }
+
+    /// Check if an event comes from an instance whose name is known.
+    ///
+    /// Assuming every instance has a unique name, events from unknown instances
+    /// should be discarded. This helps prevent "ghost instances" that were
+    /// stopped but haven't yet disconnected properly from influencing your
+    /// bot's state.
+    ///
+    /// The user is responsible for ensuring that instances' names are unique.
+    pub fn is_from_known_instance(&self, event: &instance::Event) -> bool {
+        self.instances.contains_key(&event.config().name)
     }
 
     pub fn is_empty(&self) -> bool {

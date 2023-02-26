@@ -17,6 +17,7 @@ Procedure when bumping the version number:
 - `bot::botrulez::FullHelp` now implements `bot::command::Command`
 - `bot::botrulez::Ping` now implements `bot::command::Command`
 - `bot::botrulez::ShortHelp` now implements `bot::command::Command`
+- `bot::instances::Instances::is_from_known_instance`
 
 ### Changed
 - Instances log to target `euphoxide::live::<name>`
