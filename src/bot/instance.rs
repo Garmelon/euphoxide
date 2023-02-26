@@ -498,7 +498,6 @@ impl Instance {
                         conn.tx().send_only(cmd);
                     } else {
                         iwarn!(config, "Auth required but no password configured");
-                        break;
                     }
                 }
                 Ok(Data::DisconnectEvent(ev)) => {
@@ -513,8 +512,6 @@ impl Instance {
 
             on_event(Event::Packet(config.clone(), packet, snapshot));
         }
-
-        Ok(())
     }
 
     async fn handle_requests(

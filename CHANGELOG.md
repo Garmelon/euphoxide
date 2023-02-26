@@ -21,6 +21,7 @@ Procedure when bumping the version number:
 
 ### Changed
 - Instances log to target `euphoxide::live::<name>`
+- Instances stay connected if auth is required but no password is set
 
 ### Fixed
 - `!uptime` minute count
