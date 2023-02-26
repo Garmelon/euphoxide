@@ -2,16 +2,16 @@ use async_trait::async_trait;
 use clap::Parser;
 
 use crate::api::Message;
-use crate::bot::command::{ClapCommand, Context};
+use crate::bot::command::{ClapCommand, Command, Context};
 use crate::conn;
-
-/// Show full bot help.
-#[derive(Parser)]
-pub struct Args {}
 
 pub struct FullHelp {
     pub before: String,
     pub after: String,
+}
+
+pub trait HasDescriptions {
+    fn descriptions(&self, ctx: &Context) -> Vec<String>;
 }
 
 impl FullHelp {
@@ -21,27 +21,8 @@ impl FullHelp {
             after: after.to_string(),
         }
     }
-}
 
-pub trait HasDescriptions {
-    fn descriptions(&self, ctx: &Context) -> Vec<String>;
-}
-
-#[async_trait]
-impl<B, E> ClapCommand<B, E> for FullHelp
-where
-    B: HasDescriptions + Send,
-    E: From<conn::Error>,
-{
-    type Args = Args;
-
-    async fn execute(
-        &self,
-        _args: Self::Args,
-        msg: &Message,
-        ctx: &Context,
-        bot: &mut B,
-    ) -> Result<(), E> {
+    fn formulate_reply<B: HasDescriptions>(&self, ctx: &Context, bot: &B) -> String {
         let mut result = String::new();
 
         if !self.before.is_empty() {
@@ -59,7 +40,46 @@ where
             result.push('\n');
         }
 
-        ctx.reply(msg.id, result).await?;
+        result
+    }
+}
+
+#[async_trait]
+impl<B, E> Command<B, E> for FullHelp
+where
+    B: HasDescriptions + Send,
+    E: From<conn::Error>,
+{
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+        if arg.trim().is_empty() {
+            let reply = self.formulate_reply(ctx, bot);
+            ctx.reply(msg.id, reply).await?;
+        }
+        Ok(())
+    }
+}
+
+/// Show full bot help.
+#[derive(Parser)]
+pub struct Args {}
+
+#[async_trait]
+impl<B, E> ClapCommand<B, E> for FullHelp
+where
+    B: HasDescriptions + Send,
+    E: From<conn::Error>,
+{
+    type Args = Args;
+
+    async fn execute(
+        &self,
+        _args: Self::Args,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<(), E> {
+        let reply = self.formulate_reply(ctx, bot);
+        ctx.reply(msg.id, reply).await?;
         Ok(())
     }
 }

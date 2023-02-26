@@ -14,6 +14,7 @@ Procedure when bumping the version number:
 ## Unreleased
 
 ### Added
+- `bot::botrulez::FullHelp` now implements `bot::command::Command`
 - `bot::botrulez::Ping` now implements `bot::command::Command`
 - `bot::botrulez::ShortHelp` now implements `bot::command::Command`
 
