@@ -4,7 +4,7 @@ use time::macros::format_description;
 use time::{Duration, OffsetDateTime, UtcOffset};
 
 use crate::api::Message;
-use crate::bot::command::{ClapCommand, Context};
+use crate::bot::command::{ClapCommand, Command, Context};
 use crate::conn;
 
 pub fn format_time(t: OffsetDateTime) -> String {
@@ -51,6 +51,45 @@ pub trait HasStartTime {
     fn start_time(&self) -> OffsetDateTime;
 }
 
+impl Uptime {
+    fn formulate_reply<B: HasStartTime>(&self, ctx: &Context, bot: &B, connected: bool) -> String {
+        let start = bot.start_time();
+        let now = OffsetDateTime::now_utc();
+
+        let mut reply = format!(
+            "/me has been up since {} ({})",
+            format_time(start),
+            format_duration(start - now),
+        );
+
+        if connected {
+            let since = ctx.joined.since;
+            reply.push_str(&format!(
+                ", connected since {} ({})",
+                format_time(since),
+                format_duration(since - now),
+            ));
+        }
+
+        reply
+    }
+}
+
+#[async_trait]
+impl<B, E> Command<B, E> for Uptime
+where
+    B: HasStartTime + Send,
+    E: From<conn::Error>,
+{
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+        if arg.trim().is_empty() {
+            let reply = self.formulate_reply(ctx, bot, false);
+            ctx.reply(msg.id, reply).await?;
+        }
+        Ok(())
+    }
+}
+
 /// Show how long the bot has been online.
 #[derive(Parser)]
 pub struct Args {
@@ -74,24 +113,7 @@ where
         ctx: &Context,
         bot: &mut B,
     ) -> Result<(), E> {
-        let start = bot.start_time();
-        let now = OffsetDateTime::now_utc();
-
-        let mut reply = format!(
-            "/me has been up since {} ({})",
-            format_time(start),
-            format_duration(start - now),
-        );
-
-        if args.connected {
-            let since = ctx.joined.since;
-            reply.push_str(&format!(
-                ", connected since {} ({})",
-                format_time(since),
-                format_duration(since - now),
-            ));
-        }
-
+        let reply = self.formulate_reply(ctx, bot, args.connected);
         ctx.reply(msg.id, reply).await?;
         Ok(())
     }

@@ -13,6 +13,9 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Added
+- `bot::botrulez::Uptime` now implements `bot::command::Command`
+
 ## v0.3.1 - 2023-02-26
 
 ### Added
