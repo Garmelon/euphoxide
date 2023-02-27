@@ -5,27 +5,13 @@ use crate::nick;
 
 use super::{Command, Context};
 
-/// Parse leading whitespace followed by an `!`-initiated command.
+/// Parse leading whitespace followed by an prefix-initiated command.
 ///
 /// Returns the command name and the remaining text with one leading whitespace
 /// removed. The remaining text may be the empty string.
-fn parse_command<'a>(text: &'a str, prefix: &str) -> Option<(&'a str, &'a str)> {
+pub fn parse_prefix_initiated<'a>(text: &'a str, prefix: &str) -> Option<(&'a str, &'a str)> {
     let text = text.trim_start();
     let text = text.strip_prefix(prefix)?;
-    let (name, rest) = text.split_once(char::is_whitespace).unwrap_or((text, ""));
-    if name.is_empty() {
-        return None;
-    }
-    Some((name, rest))
-}
-
-/// Parse leading whitespace followed by an `@`-initiated nick.
-///
-/// Returns the nick and the remaining text with one leading whitespace removed.
-/// The remaining text may be the empty string.
-fn parse_specific(text: &str) -> Option<(&str, &str)> {
-    let text = text.trim_start();
-    let text = text.strip_prefix('@')?;
     let (name, rest) = text.split_once(char::is_whitespace).unwrap_or((text, ""));
     if name.is_empty() {
         return None;
@@ -73,7 +59,7 @@ where
         bot: &mut B,
     ) -> Result<bool, E> {
         // TODO Replace with let-else
-        let (name, rest) = match parse_command(arg, &self.prefix) {
+        let (name, rest) = match parse_prefix_initiated(arg, &self.prefix) {
             Some(parsed) => parsed,
             None => return Ok(false),
         };
@@ -126,7 +112,7 @@ where
         bot: &mut B,
     ) -> Result<bool, E> {
         // TODO Replace with let-else
-        let (name, rest) = match parse_command(arg, &self.prefix) {
+        let (name, rest) = match parse_prefix_initiated(arg, &self.prefix) {
             Some(parsed) => parsed,
             None => return Ok(false),
         };
@@ -135,7 +121,7 @@ where
             return Ok(false);
         }
 
-        if parse_specific(rest).is_some() {
+        if parse_prefix_initiated(rest, "@").is_some() {
             // The command looks like a specific command. If we treated it like
             // a general command match, we would interpret other bots' specific
             // commands as general commands.
@@ -187,7 +173,7 @@ where
         bot: &mut B,
     ) -> Result<bool, E> {
         // TODO Replace with let-else
-        let (name, rest) = match parse_command(arg, &self.prefix) {
+        let (name, rest) = match parse_prefix_initiated(arg, &self.prefix) {
             Some(parsed) => parsed,
             None => return Ok(false),
         };
@@ -197,7 +183,7 @@ where
         }
 
         // TODO Replace with let-else
-        let (nick, rest) = match parse_specific(rest) {
+        let (nick, rest) = match parse_prefix_initiated(rest, "@") {
             Some(parsed) => parsed,
             None => return Ok(false),
         };
@@ -212,33 +198,34 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::{parse_command, parse_specific};
+    use super::parse_prefix_initiated;
 
     #[test]
-    fn test_parse_command() {
-        assert_eq!(parse_command("!foo", "!"), Some(("foo", "")));
-        assert_eq!(parse_command("    !foo", "!"), Some(("foo", "")));
-        assert_eq!(parse_command("!foo    ", "!"), Some(("foo", "   ")));
-        assert_eq!(parse_command("    !foo    ", "!"), Some(("foo", "   ")));
-        assert_eq!(parse_command("!foo @bar", "!"), Some(("foo", "@bar")));
-        assert_eq!(parse_command("!foo    @bar", "!"), Some(("foo", "   @bar")));
-        assert_eq!(parse_command("!foo @bar   ", "!"), Some(("foo", "@bar   ")));
-        assert_eq!(parse_command("! foo @bar", "!"), None);
-        assert_eq!(parse_command("!", "!"), None);
-        assert_eq!(parse_command("?foo", "!"), None);
-    }
-
-    #[test]
-    fn test_parse_specific() {
-        assert_eq!(parse_specific("@foo"), Some(("foo", "")));
-        assert_eq!(parse_specific("    @foo"), Some(("foo", "")));
-        assert_eq!(parse_specific("@foo    "), Some(("foo", "   ")));
-        assert_eq!(parse_specific("    @foo    "), Some(("foo", "   ")));
-        assert_eq!(parse_specific("@foo !bar"), Some(("foo", "!bar")));
-        assert_eq!(parse_specific("@foo     !bar"), Some(("foo", "    !bar")));
-        assert_eq!(parse_specific("@foo !bar    "), Some(("foo", "!bar    ")));
-        assert_eq!(parse_specific("@ foo !bar"), None);
-        assert_eq!(parse_specific("@"), None);
-        assert_eq!(parse_specific("?foo"), None);
+    fn test_parse_prefixed() {
+        assert_eq!(parse_prefix_initiated("!foo", "!"), Some(("foo", "")));
+        assert_eq!(parse_prefix_initiated("    !foo", "!"), Some(("foo", "")));
+        assert_eq!(
+            parse_prefix_initiated("!foo    ", "!"),
+            Some(("foo", "   "))
+        );
+        assert_eq!(
+            parse_prefix_initiated("    !foo    ", "!"),
+            Some(("foo", "   "))
+        );
+        assert_eq!(
+            parse_prefix_initiated("!foo @bar", "!"),
+            Some(("foo", "@bar"))
+        );
+        assert_eq!(
+            parse_prefix_initiated("!foo    @bar", "!"),
+            Some(("foo", "   @bar"))
+        );
+        assert_eq!(
+            parse_prefix_initiated("!foo @bar   ", "!"),
+            Some(("foo", "@bar   "))
+        );
+        assert_eq!(parse_prefix_initiated("! foo @bar", "!"), None);
+        assert_eq!(parse_prefix_initiated("!", "!"), None);
+        assert_eq!(parse_prefix_initiated("?foo", "!"), None);
     }
 }

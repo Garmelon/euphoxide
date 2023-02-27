@@ -15,6 +15,7 @@ Procedure when bumping the version number:
 
 ### Added
 - `bot::botrulez::Uptime` now implements `bot::command::Command`
+- `bot::command::parse_prefix_initiated`
 - `bot::commands::Commands::fallthrough`
 - `bot::commands::Commands::set_fallthrough`
 
