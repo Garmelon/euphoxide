@@ -34,10 +34,10 @@ impl ClapCommand<Bot, conn::Error> for Kill {
         msg: &Message,
         ctx: &Context,
         bot: &mut Bot,
-    ) -> Result<(), conn::Error> {
+    ) -> Result<bool, conn::Error> {
         bot.stop = true;
         ctx.reply(msg.id, "/me dies").await?;
-        Ok(())
+        Ok(true)
     }
 }
 
@@ -61,14 +61,14 @@ impl ClapCommand<Bot, conn::Error> for Test {
         msg: &Message,
         ctx: &Context,
         _bot: &mut Bot,
-    ) -> Result<(), conn::Error> {
+    ) -> Result<bool, conn::Error> {
         let content = if args.amount == 1 {
             format!("/me did {} test", args.amount)
         } else {
             format!("/me did {} tests", args.amount)
         };
         ctx.reply(msg.id, content).await?;
-        Ok(())
+        Ok(true)
     }
 }
 

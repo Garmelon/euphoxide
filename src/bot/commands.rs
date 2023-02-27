@@ -7,11 +7,32 @@ use super::instance::{InstanceConfig, Snapshot};
 
 pub struct Commands<B, E> {
     commands: Vec<Box<dyn Command<B, E> + Send + Sync>>,
+    fallthrough: bool,
 }
 
 impl<B, E> Commands<B, E> {
     pub fn new() -> Self {
-        Self { commands: vec![] }
+        Self {
+            commands: vec![],
+            fallthrough: false,
+        }
+    }
+
+    /// Whether further commands should be executed after a command returns
+    /// `true`.
+    ///
+    /// If disabled, commands are run until the first command that returns
+    /// `true`. If enabled, all commands are run irrespective of their return
+    /// values.
+    pub fn fallthrough(&self) -> bool {
+        self.fallthrough
+    }
+
+    /// Set whether fallthrough is active.
+    ///
+    /// See [`Self::fallthrough`] for more details.
+    pub fn set_fallthrough(&mut self, active: bool) {
+        self.fallthrough = active;
     }
 
     pub fn add<C>(&mut self, command: C)
@@ -28,21 +49,22 @@ impl<B, E> Commands<B, E> {
             .collect::<Vec<_>>()
     }
 
-    /// Returns `true` if a command was found and executed, `false` otherwise.
+    /// Returns `true` if one or more commands returned `true`, `false`
+    /// otherwise.
     pub async fn handle_packet(
         &self,
         config: &InstanceConfig,
         packet: &ParsedPacket,
         snapshot: &Snapshot,
         bot: &mut B,
-    ) -> Result<(), E> {
+    ) -> Result<bool, E> {
         let msg = match &packet.content {
             Ok(Data::SendEvent(SendEvent(msg))) => msg,
-            _ => return Ok(()),
+            _ => return Ok(false),
         };
 
         let joined = match &snapshot.state {
-            conn::State::Joining(_) => return Ok(()),
+            conn::State::Joining(_) => return Ok(false),
             conn::State::Joined(joined) => joined.clone(),
         };
 
@@ -52,11 +74,15 @@ impl<B, E> Commands<B, E> {
             joined,
         };
 
+        let mut handled = false;
         for command in &self.commands {
-            command.execute(&msg.content, msg, &ctx, bot).await?;
+            handled = handled || command.execute(&msg.content, msg, &ctx, bot).await?;
+            if !self.fallthrough && handled {
+                break;
+            }
         }
 
-        Ok(())
+        Ok(handled)
     }
 }
 

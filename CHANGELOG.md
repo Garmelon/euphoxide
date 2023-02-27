@@ -15,6 +15,13 @@ Procedure when bumping the version number:
 
 ### Added
 - `bot::botrulez::Uptime` now implements `bot::command::Command`
+- `bot::commands::Commands::fallthrough`
+- `bot::commands::Commands::set_fallthrough`
+
+### Changed
+- `bot::command::ClapCommand::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- `bot::command::Command::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- `bot::commands::Commands::handle_packet` now returns a `Result<bool, E>` instead of a `Result<(), E>`
 
 ## v0.3.1 - 2023-02-26
 

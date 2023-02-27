@@ -16,7 +16,7 @@ pub trait ClapCommand<B, E> {
         msg: &Message,
         ctx: &Context,
         bot: &mut B,
-    ) -> Result<(), E>;
+    ) -> Result<bool, E>;
 }
 
 /// Parse bash-like quoted arguments separated by whitespace.
@@ -110,12 +110,18 @@ where
         C::Args::command().get_about().map(|s| format!("{s}"))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+    async fn execute(
+        &self,
+        arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<bool, E> {
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,
             Err(err) => {
                 ctx.reply(msg.id, err).await?;
-                return Ok(());
+                return Ok(true);
             }
         };
 
@@ -127,7 +133,7 @@ where
             Ok(args) => args,
             Err(err) => {
                 ctx.reply(msg.id, format!("{}", err.render())).await?;
-                return Ok(());
+                return Ok(true);
             }
         };
 

@@ -54,5 +54,11 @@ pub trait Command<B, E> {
         None
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E>;
+    async fn execute(
+        &self,
+        arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<bool, E>;
 }

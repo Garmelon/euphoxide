@@ -81,12 +81,20 @@ where
     B: HasStartTime + Send,
     E: From<conn::Error>,
 {
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+    async fn execute(
+        &self,
+        arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<bool, E> {
         if arg.trim().is_empty() {
             let reply = self.formulate_reply(ctx, bot, false);
             ctx.reply(msg.id, reply).await?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-        Ok(())
     }
 }
 
@@ -112,9 +120,9 @@ where
         msg: &Message,
         ctx: &Context,
         bot: &mut B,
-    ) -> Result<(), E> {
+    ) -> Result<bool, E> {
         let reply = self.formulate_reply(ctx, bot, args.connected);
         ctx.reply(msg.id, reply).await?;
-        Ok(())
+        Ok(true)
     }
 }

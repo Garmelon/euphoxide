@@ -24,11 +24,13 @@ where
         msg: &Message,
         ctx: &Context,
         _bot: &mut B,
-    ) -> Result<(), E> {
+    ) -> Result<bool, E> {
         if arg.trim().is_empty() {
             ctx.reply(msg.id, &self.0).await?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-        Ok(())
     }
 }
 
@@ -49,8 +51,8 @@ where
         msg: &Message,
         ctx: &Context,
         _bot: &mut B,
-    ) -> Result<(), E> {
+    ) -> Result<bool, E> {
         ctx.reply(msg.id, &self.0).await?;
-        Ok(())
+        Ok(true)
     }
 }

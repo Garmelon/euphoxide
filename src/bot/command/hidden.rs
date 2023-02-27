@@ -17,7 +17,13 @@ where
         None
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+    async fn execute(
+        &self,
+        arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<bool, E> {
         self.0.execute(arg, msg, ctx, bot).await
     }
 }

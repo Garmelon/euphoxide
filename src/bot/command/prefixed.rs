@@ -29,11 +29,17 @@ where
         Some(format!("{} - {inner}", self.prefix))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+    async fn execute(
+        &self,
+        arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<bool, E> {
         if let Some(rest) = arg.trim_start().strip_prefix(&self.prefix) {
             self.inner.execute(rest, msg, ctx, bot).await
         } else {
-            Ok(())
+            Ok(false)
         }
     }
 }

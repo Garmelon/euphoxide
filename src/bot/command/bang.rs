@@ -65,15 +65,21 @@ where
         Some(format!("{}{} - {inner}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+    async fn execute(
+        &self,
+        arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<bool, E> {
         // TODO Replace with let-else
         let (name, rest) = match parse_command(arg, &self.prefix) {
             Some(parsed) => parsed,
-            None => return Ok(()),
+            None => return Ok(false),
         };
 
         if name != self.name {
-            return Ok(());
+            return Ok(false);
         }
 
         self.inner.execute(rest, msg, ctx, bot).await
@@ -112,22 +118,28 @@ where
         Some(format!("{}{} - {inner}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+    async fn execute(
+        &self,
+        arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<bool, E> {
         // TODO Replace with let-else
         let (name, rest) = match parse_command(arg, &self.prefix) {
             Some(parsed) => parsed,
-            None => return Ok(()),
+            None => return Ok(false),
         };
 
         if name != self.name {
-            return Ok(());
+            return Ok(false);
         }
 
         if parse_specific(rest).is_some() {
             // The command looks like a specific command. If we treated it like
             // a general command match, we would interpret other bots' specific
             // commands as general commands.
-            return Ok(());
+            return Ok(false);
         }
 
         self.inner.execute(rest, msg, ctx, bot).await
@@ -167,25 +179,31 @@ where
         Some(format!("{}{} @{nick} - {inner}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context, bot: &mut B) -> Result<(), E> {
+    async fn execute(
+        &self,
+        arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        bot: &mut B,
+    ) -> Result<bool, E> {
         // TODO Replace with let-else
         let (name, rest) = match parse_command(arg, &self.prefix) {
             Some(parsed) => parsed,
-            None => return Ok(()),
+            None => return Ok(false),
         };
 
         if name != self.name {
-            return Ok(());
+            return Ok(false);
         }
 
         // TODO Replace with let-else
         let (nick, rest) = match parse_specific(rest) {
             Some(parsed) => parsed,
-            None => return Ok(()),
+            None => return Ok(false),
         };
 
         if nick::normalize(nick) != nick::normalize(&ctx.joined.session.name) {
-            return Ok(());
+            return Ok(false);
         }
 
         self.inner.execute(rest, msg, ctx, bot).await
