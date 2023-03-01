@@ -1,6 +1,6 @@
 # The vanilla euphoria frontend uses version 0.2.4 of the npm package
 # "emoji-annotation-to-unicode" [0]. It ignores all emoji set to null [1]. It
-# removes the "iphone" emoji [2] and replaces it with the "phone" emoji [3]. It
+# removes the "iphone" emoji [2] and replaces it with the "mobile" emoji [3]. It
 # also adds a few more emoji names without a unicode equivalent [4].
 #
 # [0]: https://www.npmjs.com/package/emoji-annotation-to-unicode/v/0.2.4
@@ -13,7 +13,7 @@
 
 # Each emoji is represented as a single line. The line starts with the emoji
 # name, followed by zero or more hexadecimal unicode code points. These elements
-# are separated by one or more spaces. If mp code points are listed, the emoji
+# are separated by one or more spaces. If no code points are listed, the emoji
 # does not correspond to any unicode code points.
 
 #################################
@@ -911,4 +911,4 @@ indigo_heart
 orange_heart
 bot
 greenduck
-phone 1f4f1
+mobile 1f4f1
