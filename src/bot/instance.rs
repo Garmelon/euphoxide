@@ -273,13 +273,13 @@ enum RunError {
 /// either case, the last event the instance sends will be an
 /// [`Event::Stopped`]. If it is not stopped using one of these two ways, it
 /// will continue to run and reconnect indefinitely.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Instance {
     config: InstanceConfig,
     request_tx: mpsc::UnboundedSender<Request>,
     // In theory, request_tx should be sufficient as canary, but I'm not sure
     // exactly how to check it during the reconnect timeout.
-    _canary_tx: oneshot::Sender<Infallible>,
+    _canary_tx: mpsc::UnboundedSender<Infallible>,
 }
 
 impl Instance {
@@ -312,7 +312,7 @@ impl Instance {
         idebug!(config, "Created with config {config:?}");
 
         let (request_tx, request_rx) = mpsc::unbounded_channel();
-        let (canary_tx, canary_rx) = oneshot::channel();
+        let (canary_tx, canary_rx) = mpsc::unbounded_channel();
 
         tokio::spawn(Self::run::<F>(
             config.clone(),
@@ -360,11 +360,11 @@ impl Instance {
         config: InstanceConfig,
         on_event: F,
         request_rx: mpsc::UnboundedReceiver<Request>,
-        canary_rx: oneshot::Receiver<Infallible>,
+        mut canary_rx: mpsc::UnboundedReceiver<Infallible>,
     ) {
         select! {
             _ = Self::stay_connected(&config, &on_event, request_rx) => (),
-            _ = canary_rx => { idebug!(config, "Instance dropped"); },
+            _ = canary_rx.recv() => { idebug!(config, "Instance dropped"); },
         }
         on_event(Event::Stopped(config))
     }

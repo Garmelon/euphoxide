@@ -23,6 +23,7 @@ Procedure when bumping the version number:
 - `bot::command::ClapCommand::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
 - `bot::command::Command::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
 - `bot::commands::Commands::handle_packet` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- `bot::instance::Instance` now implements `Clone`
 
 ### Fixed
 - `phone` and `mobile` emoji
