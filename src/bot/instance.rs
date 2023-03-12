@@ -251,7 +251,7 @@ enum Request {
 enum RunError {
     StoppedManually,
     InstanceDropped,
-    CouldNotConnect(tungstenite::Error),
+    CouldNotConnect(conn::Error),
     Conn(conn::Error),
 }
 
@@ -394,9 +394,9 @@ impl Instance {
                     idebug!(config, "Instance dropped");
                     break;
                 }
-                Err(RunError::CouldNotConnect(tungstenite::Error::Http(response)))
-                    if response.status() == StatusCode::NOT_FOUND =>
-                {
+                Err(RunError::CouldNotConnect(conn::Error::Tungstenite(
+                    tungstenite::Error::Http(response),
+                ))) if response.status() == StatusCode::NOT_FOUND => {
                     iwarn!(config, "Failed to connect: room does not exist");
                     break;
                 }

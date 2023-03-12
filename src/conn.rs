@@ -30,6 +30,8 @@ pub type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 pub enum Error {
     /// The connection is now closed.
     ConnectionClosed,
+    /// The connection was not opened in time.
+    ConnectionTimedOut,
     /// The server didn't reply to one of our commands in time.
     CommandTimedOut,
     /// The server did something that violated the api specification.
@@ -45,6 +47,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ConnectionClosed => write!(f, "connection closed"),
+            Self::ConnectionTimedOut => write!(f, "connection did not open in time"),
             Self::CommandTimedOut => write!(f, "server did not reply to command in time"),
             Self::ProtocolViolation(msg) => write!(f, "{msg}"),
             Self::Euph(msg) => write!(f, "{msg}"),
@@ -613,7 +616,7 @@ impl Conn {
         human: bool,
         cookies: Option<HeaderValue>,
         timeout: Duration,
-    ) -> tungstenite::Result<(Self, Vec<HeaderValue>)> {
+    ) -> Result<(Self, Vec<HeaderValue>)> {
         let human = if human { "?h=1" } else { "" };
         let uri = format!("wss://{domain}/room/{room}/ws{human}");
         debug!("Connecting to {uri} with cookies: {cookies:?}");
@@ -622,7 +625,10 @@ impl Conn {
             request.headers_mut().append(header::COOKIE, cookies);
         }
 
-        let (ws, response) = tokio_tungstenite::connect_async(request).await?;
+        let (ws, response) =
+            tokio::time::timeout(timeout, tokio_tungstenite::connect_async(request))
+                .await
+                .map_err(|_| Error::ConnectionTimedOut)??;
         let (mut parts, _) = response.into_parts();
         let cookies_set = match parts.headers.entry(header::SET_COOKIE) {
             header::Entry::Occupied(entry) => entry.remove_entry_mult().1.collect(),

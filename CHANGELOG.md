@@ -18,15 +18,18 @@ Procedure when bumping the version number:
 - `bot::command::parse_prefix_initiated`
 - `bot::commands::Commands::fallthrough`
 - `bot::commands::Commands::set_fallthrough`
+- `conn::Error::ConnectionTimedOut`
 
 ### Changed
 - `bot::command::ClapCommand::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
 - `bot::command::Command::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
 - `bot::commands::Commands::handle_packet` now returns a `Result<bool, E>` instead of a `Result<(), E>`
 - `bot::instance::Instance` now implements `Clone`
+- `conn::Conn::connect` now returns `conn::Result`
 
 ### Fixed
 - `phone` and `mobile` emoji
+- Instances getting stuck in "Connecting" state
 
 ## v0.3.1 - 2023-02-26
 
