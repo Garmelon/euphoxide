@@ -56,7 +56,7 @@ pub struct ChangePassword {
 
 /// Return the outcome of changing the password.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChangePasswordReply;
+pub struct ChangePasswordReply {}
 
 /// Attempt to log an anonymous session into an account.
 ///
@@ -99,11 +99,11 @@ pub struct LoginReply {
 /// [`DisconnectEvent`](super::DisconnectEvent) shortly after. The next
 /// connection the client makes will be a logged out session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Logout;
+pub struct Logout {}
 
 /// Confirm a logout.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LogoutReply;
+pub struct LogoutReply {}
 
 /// Create a new account and logs into it.
 ///
@@ -146,11 +146,11 @@ pub struct RegisterAccountReply {
 /// An error will be returned if the account has no unverified email addresses
 /// associated with it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ResendVerificationEmail;
+pub struct ResendVerificationEmail {}
 
 /// Indicate that a verification email has been sent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ResendVerificationEmailReply;
+pub struct ResendVerificationEmailReply {}
 
 /// Generate a password reset request.
 ///
@@ -164,4 +164,4 @@ pub struct ResetPassword {
 
 /// Confirm that the password reset is in progress.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ResetPasswordReply;
+pub struct ResetPasswordReply {}

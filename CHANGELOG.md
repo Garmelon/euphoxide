@@ -28,6 +28,7 @@ Procedure when bumping the version number:
 - `bot::instance::Instance` now implements `Clone`
 
 ### Fixed
+- **(breaking)** Deserializing empty events and replies by turning unit structs into empty structs
 - `phone` and `mobile` emoji
 - Instances getting stuck in "Connecting" state
 

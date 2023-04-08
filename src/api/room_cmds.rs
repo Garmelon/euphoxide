@@ -110,7 +110,7 @@ pub struct SendReply(pub Message);
 
 /// Request a list of sessions currently joined in the room.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Who;
+pub struct Who {}
 
 /// Lists the sessions currently joined in the room.
 #[derive(Debug, Clone, Serialize, Deserialize)]

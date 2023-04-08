@@ -68,7 +68,7 @@ pub struct LoginEvent {
 /// Sent to all sessions of an agent when that agent is logged out (except for
 /// the session that issued the logout command).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LogoutEvent;
+pub struct LogoutEvent {}
 
 /// Indicates some server-side event that impacts the presence of sessions in a
 /// room.
