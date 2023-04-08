@@ -444,10 +444,11 @@ impl Conn {
             self.replies.complete(id, packet.clone());
         }
 
-        match &packet.content {
-            Ok(data) => self.on_data(&packet.id, data).await,
-            Err(msg) => Err(Error::Euph(msg.clone())),
+        if let Ok(data) = &packet.content {
+            self.on_data(&packet.id, data).await?;
         }
+
+        Ok(())
     }
 
     async fn on_data(&mut self, id: &Option<String>, data: &Data) -> Result<()> {

@@ -31,6 +31,7 @@ Procedure when bumping the version number:
 - **(breaking)** Deserializing empty events and replies by turning unit structs into empty structs
 - `phone` and `mobile` emoji
 - Instances getting stuck in "Connecting" state
+- Euph errors always turning into `conn::Error`s
 
 ## v0.3.1 - 2023-02-26
 
