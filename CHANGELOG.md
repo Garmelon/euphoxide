@@ -21,11 +21,11 @@ Procedure when bumping the version number:
 - `conn::Error::ConnectionTimedOut`
 
 ### Changed
-- `bot::command::ClapCommand::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
-- `bot::command::Command::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
-- `bot::commands::Commands::handle_packet` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- **(breaking)** `bot::command::ClapCommand::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- **(breaking)** `bot::command::Command::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- **(breaking)** `bot::commands::Commands::handle_packet` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- **(breaking)** `conn::Conn::connect` now returns `conn::Result`
 - `bot::instance::Instance` now implements `Clone`
-- `conn::Conn::connect` now returns `conn::Result`
 
 ### Fixed
 - `phone` and `mobile` emoji
@@ -63,13 +63,13 @@ Procedure when bumping the version number:
 - VSCode project settings
 
 ### Changed
-- `conn` module redesigned and rewritten (backwards-incompatible)
-- `nick_hue` moved to `nick::hue_without_removing_emoji`
+- **(breaking)** `conn` module redesigned and rewritten
+- **(breaking)** `nick_hue` moved to `nick::hue_without_removing_emoji`
 - Renamed `testbot` example to `testbot_manual`
 
 ### Removed
-- `connect` (see `conn::Conn::connect`)
-- `wrap` (see `conn::Conn::wrap`)
+- **(breaking)** `connect` (see `conn::Conn::connect`)
+- **(breaking)** `wrap` (see `conn::Conn::wrap`)
 
 ## v0.2.0 - 2022-12-10
 
@@ -77,7 +77,7 @@ Procedure when bumping the version number:
 - `connect`
 
 ### Changed
-- Updated dependencies (backwards-incompatible)
+- **(breaking)** Updated dependencies
 
 ## v0.1.0 - 2022-10-23
 
