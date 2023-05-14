@@ -5,6 +5,10 @@ use crate::nick;
 
 use super::{Command, Context};
 
+// TODO Don't ignore leading whitespace?
+// I'm not entirely happy with how commands handle whitespace, and on euphoria,
+// prefixing commands with whitespace is traditionally used to not trigger them.
+
 /// Parse leading whitespace followed by an prefix-initiated command.
 ///
 /// Returns the command name and the remaining text with one leading whitespace
