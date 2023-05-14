@@ -3,7 +3,7 @@
 
 use euphoxide::api::packet::ParsedPacket;
 use euphoxide::api::{Data, Nick, Send};
-use euphoxide::bot::instance::{Event, ServerConfig, Snapshot};
+use euphoxide::bot::instance::{ConnSnapshot, Event, ServerConfig};
 use euphoxide::bot::instances::Instances;
 use time::OffsetDateTime;
 use tokio::sync::mpsc;
@@ -44,7 +44,7 @@ fn format_delta(delta: time::Duration) -> String {
     parts.join(" ")
 }
 
-async fn on_packet(packet: ParsedPacket, snapshot: Snapshot) -> Result<(), ()> {
+async fn on_packet(packet: ParsedPacket, snapshot: ConnSnapshot) -> Result<(), ()> {
     let data = match packet.content {
         Ok(data) => data,
         Err(err) => {

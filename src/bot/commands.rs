@@ -3,7 +3,7 @@ use crate::api::{Data, SendEvent};
 use crate::conn;
 
 use super::command::{Command, Context};
-use super::instance::{InstanceConfig, Snapshot};
+use super::instance::{ConnSnapshot, InstanceConfig};
 
 pub struct Commands<B, E> {
     commands: Vec<Box<dyn Command<B, E> + Send + Sync>>,
@@ -55,7 +55,7 @@ impl<B, E> Commands<B, E> {
         &self,
         config: &InstanceConfig,
         packet: &ParsedPacket,
-        snapshot: &Snapshot,
+        snapshot: &ConnSnapshot,
         bot: &mut B,
     ) -> Result<bool, E> {
         let msg = match &packet.content {

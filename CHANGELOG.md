@@ -24,6 +24,7 @@ Procedure when bumping the version number:
 - **(breaking)** `bot::command::ClapCommand::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
 - **(breaking)** `bot::command::Command::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
 - **(breaking)** `bot::commands::Commands::handle_packet` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- **(breaking)** `bot::instance::Snapshot` renamed to `ConnSnapshot`
 - **(breaking)** `conn::Conn::connect` now returns `conn::Result`
 - `bot::instance::Instance` now implements `Clone`
 

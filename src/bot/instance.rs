@@ -193,12 +193,12 @@ impl InstanceConfig {
 
 /// Snapshot of a [`Conn`]'s state immediately after receiving a packet.
 #[derive(Debug, Clone)]
-pub struct Snapshot {
+pub struct ConnSnapshot {
     pub conn_tx: ConnTx,
     pub state: State,
 }
 
-impl Snapshot {
+impl ConnSnapshot {
     fn from_conn(conn: &Conn) -> Self {
         Self {
             conn_tx: conn.tx().clone(),
@@ -224,8 +224,8 @@ impl Snapshot {
 #[derive(Debug)]
 pub enum Event {
     Connecting(InstanceConfig),
-    Connected(InstanceConfig, Snapshot),
-    Packet(InstanceConfig, ParsedPacket, Snapshot),
+    Connected(InstanceConfig, ConnSnapshot),
+    Packet(InstanceConfig, ParsedPacket, ConnSnapshot),
     Disconnected(InstanceConfig),
     Stopped(InstanceConfig),
 }
@@ -458,7 +458,10 @@ impl Instance {
         .map_err(RunError::CouldNotConnect)?;
 
         Self::set_cookies(config, cookies);
-        on_event(Event::Connected(config.clone(), Snapshot::from_conn(&conn)));
+        on_event(Event::Connected(
+            config.clone(),
+            ConnSnapshot::from_conn(&conn),
+        ));
 
         let conn_tx = conn.tx().clone();
         select! {
@@ -474,7 +477,7 @@ impl Instance {
     ) -> Result<(), RunError> {
         loop {
             let packet = conn.recv().await.map_err(RunError::Conn)?;
-            let snapshot = Snapshot::from_conn(conn);
+            let snapshot = ConnSnapshot::from_conn(conn);
 
             match &packet.content {
                 Ok(Data::SnapshotEvent(snapshot)) => {
