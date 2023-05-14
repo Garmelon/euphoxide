@@ -13,6 +13,8 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+## v0.4.0 - 2023-05-14
+
 ### Added
 - `bot::botrulez::Uptime` now implements `bot::command::Command`
 - `bot::command::parse_prefix_initiated`
