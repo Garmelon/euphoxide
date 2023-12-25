@@ -15,7 +15,7 @@ fn hue_normalize(text: &str) -> String {
 
 /// A re-implementation of [euphoria's nick hue hashing algorithm][0].
 ///
-/// [0]: https://github.com/euphoria-io/heim/blob/master/client/lib/hueHash.js
+/// [0]: https://github.com/CylonicRaider/heim/blob/master/client/lib/hueHash.js
 fn hue_hash(text: &str, offset: i64) -> u8 {
     let mut val = 0_i32;
     for bibyte in text.encode_utf16() {
@@ -48,7 +48,7 @@ pub fn hue_without_removing_emoji(nick: &str) -> u8 {
 /// This is a reimplementation of [euphoria's nick hue hashing algorithm][0]. It
 /// should always return the same value as the official client's implementation.
 ///
-/// [0]: https://github.com/euphoria-io/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/hueHash.js
+/// [0]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/hueHash.js
 pub fn hue(emoji: &Emoji, nick: &str) -> u8 {
     hue_without_removing_emoji(&emoji.remove(nick))
 }
@@ -74,7 +74,7 @@ pub fn hue(emoji: &Emoji, nick: &str) -> u8 {
 /// property that's easier to implement, even though it may be incorrect in some
 /// edge cases.
 ///
-/// [0]: https://github.com/euphoria-io/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/stores/chat.js#L14
+/// [0]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/stores/chat.js#L14
 pub fn normalize(nick: &str) -> String {
     mention(nick) // Step 1
         .nfkc() // Step 2

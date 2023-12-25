@@ -1,4 +1,6 @@
-//! Models the euphoria API at <http://api.euphoria.io/>.
+//! Models the [euphoria API][0].
+//!
+//! [0](https://github.com/CylonicRaider/heim/blob/master/doc/api.md)
 
 mod account_cmds;
 mod events;

@@ -4,10 +4,10 @@
 # also adds a few more emoji names without a unicode equivalent [4].
 #
 # [0]: https://www.npmjs.com/package/emoji-annotation-to-unicode/v/0.2.4
-# [1]: https://github.com/euphoria-io/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/emoji.js#L37-L39
-# [2]: https://github.com/euphoria-io/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/emoji.js#L26
-# [3]: https://github.com/euphoria-io/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/emoji.js#L23
-# [4]: https://github.com/euphoria-io/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/emoji.js#L8-L22
+# [1]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/emoji.js#L37-L39
+# [2]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/emoji.js#L26
+# [3]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/emoji.js#L23
+# [4]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/emoji.js#L8-L22
 
 # Any line that is empty or starts with # is ignored.
 

@@ -1,4 +1,4 @@
-//! All emoji the vanilla euphoria.io client knows.
+//! All emoji the euphoria.io client knows.
 
 use std::borrow::Cow;
 use std::collections::HashMap;

@@ -10,7 +10,7 @@ use euphoxide::conn::{Conn, ConnTx, State};
 use time::OffsetDateTime;
 
 const TIMEOUT: Duration = Duration::from_secs(10);
-const DOMAIN: &str = "euphoria.io";
+const DOMAIN: &str = "euphoria.leet.nu";
 const ROOM: &str = "test";
 const NICK: &str = "TestBot";
 const HELP: &str = "I'm an example bot for https://github.com/Garmelon/euphoxide";

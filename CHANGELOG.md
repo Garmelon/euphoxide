@@ -13,6 +13,10 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Changed
+- **(breaking)** `bot::instance::ServerConfig::default` now points to `euphoria.leet.nu`
+- Documentation now references `euphoria.leet.nu` instead of `euphoria.io`
+
 ## v0.4.0 - 2023-05-14
 
 ### Added

@@ -98,7 +98,7 @@ impl Default for ServerConfig {
         Self {
             timeout: Duration::from_secs(30),
             reconnect_delay: Duration::from_secs(30),
-            domain: "euphoria.io".to_string(),
+            domain: "euphoria.leet.nu".to_string(),
             cookies: Arc::new(Mutex::new(CookieJar::new())),
         }
     }
