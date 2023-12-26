@@ -14,6 +14,8 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+## v0.5.0 - 2023-12-27
+
 ### Changed
 
 - **(breaking)** `bot::instance::ServerConfig::default` now points to `euphoria.leet.nu`
