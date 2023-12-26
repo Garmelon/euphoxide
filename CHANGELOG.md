@@ -17,6 +17,8 @@ Procedure when bumping the version number:
 ### Changed
 
 - **(breaking)** `bot::instance::ServerConfig::default` now points to `euphoria.leet.nu`
+- **(breaking)** Bumped `cookie` dependency from `0.17` to `0.18`
+- **(breaking)** Bumped `tokio-tungstenite` dependency from `0.18` to `0.21`
 - Updated set of emoji names
 - Documentation now references `euphoria.leet.nu` instead of `euphoria.io`
 
