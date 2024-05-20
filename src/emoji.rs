@@ -4,33 +4,51 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
 
-const EMOJI_RAW: &str = include_str!("emoji.txt");
+/// Euphoria.leet.nu emoji list, obtainable via shell command:
+///
+/// ```bash
+/// curl 'https://euphoria.leet.nu/static/emoji.json' \
+///   | jq 'to_entries | sort_by(.key) | from_entries' \
+///   > emoji.json
+/// ```
+const EMOJI_JSON: &str = include_str!("emoji.json");
 
 /// A map from emoji names to their unicode representation. Not all emojis have
 /// such a representation.
 pub struct Emoji(pub HashMap<String, Option<String>>);
 
-fn parse_hex_to_char(hex: &str) -> char {
-    u32::from_str_radix(hex, 16).unwrap().try_into().unwrap()
+fn parse_hex_to_char(hex: &str) -> Option<char> {
+    u32::from_str_radix(hex, 16).ok()?.try_into().ok()
 }
 
-fn parse_line(line: &str) -> (String, Option<String>) {
-    let mut line = line.split_ascii_whitespace();
-    let name = line.next().unwrap().to_string();
-    let unicode = line.map(parse_hex_to_char).collect::<String>();
-    let unicode = Some(unicode).filter(|u| !u.is_empty());
-    (name, unicode)
+fn parse_code_points(code_points: &str) -> Option<String> {
+    code_points
+        .split('-')
+        .map(parse_hex_to_char)
+        .collect::<Option<String>>()
 }
 
 impl Emoji {
+    /// Load a list of emoji compiled into the library.
     pub fn load() -> Self {
-        let map = EMOJI_RAW
-            .lines()
-            .map(|l| l.trim())
-            .filter(|l| !l.is_empty() && !l.starts_with('#'))
-            .map(parse_line)
-            .collect();
-        Self(map)
+        Self::load_from_json(EMOJI_JSON).unwrap()
+    }
+
+    /// Load a list of emoji from a string containing a JSON object.
+    ///
+    /// The object keys are the emoji names (without colons `:`). The object
+    /// values are the emoji code points encoded as hexadecimal numbers and
+    /// separated by a dash `-` (e.g. `"34-fe0f-20e3"`). Emojis whose values
+    /// don't match this schema are interpreted as emojis without unicode
+    /// representation.
+    pub fn load_from_json(json: &str) -> Option<Self> {
+        let map = serde_json::from_str::<HashMap<String, String>>(json)
+            .ok()?
+            .into_iter()
+            .map(|(k, v)| (k, parse_code_points(&v)))
+            .collect::<HashMap<_, _>>();
+
+        Some(Self(map))
     }
 
     pub fn get(&self, name: &str) -> Option<Option<&str>> {

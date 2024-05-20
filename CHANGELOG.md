@@ -14,6 +14,14 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Added
+
+- `Emoji::load_from_json`
+
+### Changed
+
+- Updated set of emoji names
+
 ## v0.5.0 - 2023-12-27
 
 ### Changed
