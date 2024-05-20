@@ -7,27 +7,27 @@ edition = "2021"
 bot = ["dep:async-trait", "dep:clap", "dep:cookie"]
 
 [dependencies]
-async-trait = { version = "0.1.75", optional = true }
+async-trait = { version = "0.1.80", optional = true }
 caseless = "0.2.1"
-cookie = { version = "0.18.0", optional = true }
+cookie = { version = "0.18.1", optional = true }
 futures-util = { version = "0.3.30", default-features = false, features = ["sink"] }
-log = "0.4.20"
-serde = { version = "1.0.193", features = ["derive"] }
-serde_json = "1.0.108"
-time = { version = "0.3.31", features = ["serde"] }
-tokio = { version = "1.35.1", features = ["time", "sync", "macros", "rt"] }
-tokio-stream = "0.1.14"
+log = "0.4.21"
+serde = { version = "1.0.202", features = ["derive"] }
+serde_json = "1.0.117"
+time = { version = "0.3.36", features = ["serde"] }
+tokio = { version = "1.37.0", features = ["time", "sync", "macros", "rt"] }
+tokio-stream = "0.1.15"
 tokio-tungstenite = { version = "0.21.0", features = ["rustls-tls-native-roots"] }
-unicode-normalization = "0.1.22"
+unicode-normalization = "0.1.23"
 
 [dependencies.clap]
-version = "4.4.11"
+version = "4.5.4"
 optional = true
 default-features = false
 features = ["std", "derive", "deprecated"]
 
 [dev-dependencies] # For example bot
-tokio = { version = "1.35.1", features = ["rt-multi-thread"] }
+tokio = { version = "1.37.0", features = ["rt-multi-thread"] }
 
 [[example]]
 name = "testbot_instance"
