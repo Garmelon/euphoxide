@@ -14,6 +14,8 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+## v0.5.1 - 2024-05-20
+
 ### Added
 
 - `Emoji::load_from_json`
