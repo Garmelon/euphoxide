@@ -1,5 +1,6 @@
 //! A small bot that doesn't use the `bot` submodule. Meant to show how the main
 //! parts of the API fit together.
+#![allow(unused_crate_dependencies)]
 
 use std::error::Error;
 use std::time::Duration;

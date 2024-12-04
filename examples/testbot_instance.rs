@@ -1,5 +1,6 @@
 //! Similar to the `testbot_manual` example, but using [`Instance`] to connect
 //! to the room (and to reconnect).
+#![allow(unused_crate_dependencies)]
 
 use euphoxide::api::packet::ParsedPacket;
 use euphoxide::api::{Data, Nick, Send};

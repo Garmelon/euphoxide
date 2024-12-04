@@ -1,3 +1,5 @@
+#![allow(unused_crate_dependencies)]
+
 // TODO Add description
 // TODO Clean up and unify test bots
 
