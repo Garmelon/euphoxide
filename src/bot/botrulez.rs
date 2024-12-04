@@ -7,4 +7,4 @@ pub mod uptime;
 pub use self::full_help::{FullHelp, HasDescriptions};
 pub use self::ping::Ping;
 pub use self::short_help::ShortHelp;
-pub use self::uptime::{format_duration, format_time, HasStartTime, Uptime};
+pub use self::uptime::{format_duration, format_relative_time, format_time, HasStartTime, Uptime};

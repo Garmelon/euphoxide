@@ -1,21 +1,29 @@
 use async_trait::async_trait;
 use clap::Parser;
-use jiff::{Span, Timestamp};
+use jiff::{Span, Timestamp, Unit};
 
 use crate::api::Message;
 use crate::bot::command::{ClapCommand, Command, Context};
 use crate::conn;
 
 pub fn format_time(t: Timestamp) -> String {
-    t.strftime("%Y-&m-%d %H:%M:%S UTC").to_string()
+    t.strftime("%Y-%m-%d %H:%M:%S UTC").to_string()
+}
+
+pub fn format_relative_time(d: Span) -> String {
+    if d.is_positive() {
+        format!("in {}", format_duration(d.abs()))
+    } else {
+        format!("{} ago", format_duration(d.abs()))
+    }
 }
 
 pub fn format_duration(d: Span) -> String {
-    let d_abs = d.abs();
-    let days = d_abs.get_days();
-    let hours = d_abs.get_hours() % 24;
-    let mins = d_abs.get_minutes() % 60;
-    let secs = d_abs.get_seconds() % 60;
+    let total = d.abs().total(Unit::Second).unwrap() as i64;
+    let secs = total % 60;
+    let mins = (total / 60) % 60;
+    let hours = (total / 60 / 60) % 24;
+    let days = total / 60 / 60 / 24;
 
     let mut segments = vec![];
     if days > 0 {
@@ -36,9 +44,9 @@ pub fn format_duration(d: Span) -> String {
 
     let segments = segments.join(" ");
     if d.is_positive() {
-        format!("in {segments}")
+        segments
     } else {
-        format!("{segments} ago")
+        format!("-{segments}")
     }
 }
 
@@ -56,7 +64,7 @@ impl Uptime {
         let mut reply = format!(
             "/me has been up since {} ({})",
             format_time(start),
-            format_duration(start - now),
+            format_relative_time(start - now),
         );
 
         if connected {
@@ -64,7 +72,7 @@ impl Uptime {
             reply.push_str(&format!(
                 ", connected since {} ({})",
                 format_time(since),
-                format_duration(since - now),
+                format_relative_time(since - now),
             ));
         }
 

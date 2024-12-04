@@ -22,6 +22,7 @@ Procedure when bumping the version number:
 - `bot::botrulez::ping`
 - `bot::botrulez::short_help`
 - `bot::botrulez::uptime`
+- `bot::botrulez::format_relative_time`
 
 ### Changed
 
@@ -31,6 +32,8 @@ Procedure when bumping the version number:
   this causes a panic while using euphoxide, consider following the steps
   mentioned in the [tokio-tungstenite README]. If I'm reading the [rustls docs]
   correctly, it is on the users of the libraries to set the required features.
+- `bot::botrulez::format_duration` now no longer mentions "since" or "ago", but
+  instead has a sign (`-`) if the duration is negative.
 
 [tokio-tungstenite README]: https://github.com/snapview/tokio-tungstenite?tab=readme-ov-file#features
 [rustls docs]: https://docs.rs/rustls/0.23.19/rustls/crypto/struct.CryptoProvider.html#using-the-per-process-default-cryptoprovider
