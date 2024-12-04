@@ -1,6 +1,5 @@
 //! A small bot that doesn't use the `bot` submodule. Meant to show how the main
 //! parts of the API fit together.
-#![allow(unused_crate_dependencies)]
 
 use std::error::Error;
 use std::time::Duration;
@@ -127,6 +126,11 @@ async fn on_packet(packet: ParsedPacket, conn_tx: &ConnTx, state: &State) -> Res
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // https://github.com/snapview/tokio-tungstenite/issues/353#issuecomment-2455247837
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .unwrap();
+
     let (mut conn, _) = Conn::connect(DOMAIN, ROOM, false, None, TIMEOUT).await?;
 
     while let Ok(packet) = conn.recv().await {

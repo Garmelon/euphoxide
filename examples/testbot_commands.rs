@@ -1,5 +1,3 @@
-#![allow(unused_crate_dependencies)]
-
 // TODO Add description
 // TODO Clean up and unify test bots
 
@@ -94,6 +92,11 @@ impl HasStartTime for Bot {
 
 #[tokio::main]
 async fn main() {
+    // https://github.com/snapview/tokio-tungstenite/issues/353#issuecomment-2455247837
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .unwrap();
+
     let (tx, mut rx) = mpsc::unbounded_channel();
     let mut instances = Instances::new(ServerConfig::default());
 

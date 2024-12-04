@@ -1,6 +1,5 @@
 //! Similar to the `testbot_manual` example, but using [`Instance`] to connect
 //! to the room (and to reconnect).
-#![allow(unused_crate_dependencies)]
 
 use euphoxide::api::packet::ParsedPacket;
 use euphoxide::api::{Data, Nick, Send};
@@ -123,6 +122,11 @@ async fn on_packet(packet: ParsedPacket, snapshot: ConnSnapshot) -> Result<(), (
 
 #[tokio::main]
 async fn main() {
+    // https://github.com/snapview/tokio-tungstenite/issues/353#issuecomment-2455247837
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .unwrap();
+
     let (tx, mut rx) = mpsc::unbounded_channel();
 
     let _instance = ServerConfig::default()
