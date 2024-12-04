@@ -1,8 +1,8 @@
 //! The main [botrulez](https://github.com/jedevc/botrulez) commands.
-mod full_help;
-mod ping;
-mod short_help;
-mod uptime;
+pub mod full_help;
+pub mod ping;
+pub mod short_help;
+pub mod uptime;
 
 pub use self::full_help::{FullHelp, HasDescriptions};
 pub use self::ping::Ping;

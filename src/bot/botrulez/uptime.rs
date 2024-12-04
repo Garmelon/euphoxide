@@ -100,7 +100,7 @@ where
 pub struct Args {
     /// Show how long the bot has been connected without interruption.
     #[arg(long, short)]
-    connected: bool,
+    pub connected: bool,
 }
 
 #[async_trait]

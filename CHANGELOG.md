@@ -14,6 +14,13 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Added
+
+- `bot::botrulez::full_help`
+- `bot::botrulez::ping`
+- `bot::botrulez::short_help`
+- `bot::botrulez::uptime`
+
 ### Changed
 
 - **(breaking)** Switched to `jiff` from `time`
