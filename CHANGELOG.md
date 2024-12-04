@@ -16,6 +16,8 @@ Procedure when bumping the version number:
 
 ### Added
 
+- `api::Time::from_timestamp`
+- `api::Time::as_timestamp`
 - `bot::botrulez::full_help`
 - `bot::botrulez::ping`
 - `bot::botrulez::short_help`
@@ -24,6 +26,7 @@ Procedure when bumping the version number:
 ### Changed
 
 - **(breaking)** Switched to `jiff` from `time`
+- **(breaking)** `api::Time` contents are now an `i64`
 - **(breaking)** Bumped `tokio-tungstenite` dependency from `0.18` to `0.24`. If
   this causes a panic while using euphoxide, consider following the steps
   mentioned in the [tokio-tungstenite README]. If I'm reading the [rustls docs]
@@ -31,6 +34,10 @@ Procedure when bumping the version number:
 
 [tokio-tungstenite README]: https://github.com/snapview/tokio-tungstenite?tab=readme-ov-file#features
 [rustls docs]: https://docs.rs/rustls/0.23.19/rustls/crypto/struct.CryptoProvider.html#using-the-per-process-default-cryptoprovider
+
+### Removed
+
+- `api::Time::new`
 
 ## v0.5.1 - 2024-05-20
 

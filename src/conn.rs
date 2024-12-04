@@ -531,7 +531,7 @@ impl Conn {
         self.ws.send(tungstenite::Message::Ping(ws_payload)).await?;
 
         // Send new euph ping
-        let euph_payload = Time::new(now);
+        let euph_payload = Time::from_timestamp(now);
         self.last_euph_ping_payload = Some(euph_payload);
         self.last_euph_ping_replied_to = false;
         let (tx, _) = oneshot::channel();

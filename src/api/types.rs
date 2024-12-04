@@ -403,15 +403,19 @@ impl<'de> Deserialize<'de> for Snowflake {
 /// Time is specified as a signed 64-bit integer, giving the number of seconds
 /// since the Unix Epoch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Time(#[serde(with = "jiff::fmt::serde::timestamp::second::required")] pub Timestamp);
+pub struct Time(pub i64);
 
 impl Time {
-    pub fn new(time: Timestamp) -> Self {
-        Self(time)
+    pub fn from_timestamp(time: Timestamp) -> Self {
+        Self(time.as_second())
+    }
+
+    pub fn as_timestamp(&self) -> Timestamp {
+        Timestamp::from_second(self.0).unwrap()
     }
 
     pub fn now() -> Self {
-        Self::new(Timestamp::now())
+        Self::from_timestamp(Timestamp::now())
     }
 }
 
