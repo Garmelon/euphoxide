@@ -1,6 +1,6 @@
 //! Models the [euphoria API][0].
 //!
-//! [0](https://github.com/CylonicRaider/heim/blob/master/doc/api.md)
+//! [0]: https://euphoria.leet.nu/heim/api
 
 mod account_cmds;
 mod events;
