@@ -1,24 +1,21 @@
 use async_trait::async_trait;
 use clap::Parser;
-use time::macros::format_description;
-use time::{Duration, OffsetDateTime, UtcOffset};
+use jiff::{Span, Timestamp};
 
 use crate::api::Message;
 use crate::bot::command::{ClapCommand, Command, Context};
 use crate::conn;
 
-pub fn format_time(t: OffsetDateTime) -> String {
-    let t = t.to_offset(UtcOffset::UTC);
-    let format = format_description!("[year]-[month]-[day] [hour]:[minute]:[second] UTC");
-    t.format(format).unwrap()
+pub fn format_time(t: Timestamp) -> String {
+    t.strftime("%Y-&m-%d %H:%M:%S UTC").to_string()
 }
 
-pub fn format_duration(d: Duration) -> String {
+pub fn format_duration(d: Span) -> String {
     let d_abs = d.abs();
-    let days = d_abs.whole_days();
-    let hours = d_abs.whole_hours() % 24;
-    let mins = d_abs.whole_minutes() % 60;
-    let secs = d_abs.whole_seconds() % 60;
+    let days = d_abs.get_days();
+    let hours = d_abs.get_hours() % 24;
+    let mins = d_abs.get_minutes() % 60;
+    let secs = d_abs.get_seconds() % 60;
 
     let mut segments = vec![];
     if days > 0 {
@@ -48,13 +45,13 @@ pub fn format_duration(d: Duration) -> String {
 pub struct Uptime;
 
 pub trait HasStartTime {
-    fn start_time(&self) -> OffsetDateTime;
+    fn start_time(&self) -> Timestamp;
 }
 
 impl Uptime {
     fn formulate_reply<B: HasStartTime>(&self, ctx: &Context, bot: &B, connected: bool) -> String {
         let start = bot.start_time();
-        let now = OffsetDateTime::now_utc();
+        let now = Timestamp::now();
 
         let mut reply = format!(
             "/me has been up since {} ({})",

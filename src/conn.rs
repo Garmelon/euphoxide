@@ -6,8 +6,8 @@ use std::future::Future;
 use std::time::{Duration, Instant};
 use std::{error, fmt, result};
 
-use ::time::OffsetDateTime;
 use futures_util::SinkExt;
+use jiff::Timestamp;
 use log::debug;
 use tokio::net::TcpStream;
 use tokio::select;
@@ -75,7 +75,7 @@ pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
 pub struct Joining {
-    pub since: OffsetDateTime,
+    pub since: Timestamp,
     pub hello: Option<HelloEvent>,
     pub snapshot: Option<SnapshotEvent>,
     pub bounce: Option<BounceEvent>,
@@ -84,7 +84,7 @@ pub struct Joining {
 impl Joining {
     fn new() -> Self {
         Self {
-            since: OffsetDateTime::now_utc(),
+            since: Timestamp::now(),
             hello: None,
             snapshot: None,
             bounce: None,
@@ -122,7 +122,7 @@ impl Joining {
                 .map(|s| (s.session_id.clone(), SessionInfo::Full(s)))
                 .collect::<HashMap<_, _>>();
             Some(Joined {
-                since: OffsetDateTime::now_utc(),
+                since: Timestamp::now(),
                 session,
                 account: hello.account.clone(),
                 listing,
@@ -164,7 +164,7 @@ impl SessionInfo {
 
 #[derive(Debug, Clone)]
 pub struct Joined {
-    pub since: OffsetDateTime,
+    pub since: Timestamp,
     pub session: SessionView,
     pub account: Option<PersonalAccountView>,
     pub listing: HashMap<SessionId, SessionInfo>,
@@ -522,10 +522,10 @@ impl Conn {
             self.disconnect().await?;
         }
 
-        let now = OffsetDateTime::now_utc();
+        let now = Timestamp::now();
 
         // Send new ws ping
-        let ws_payload = now.unix_timestamp_nanos().to_be_bytes().to_vec();
+        let ws_payload = now.as_millisecond().to_be_bytes().to_vec();
         self.last_ws_ping_payload = Some(ws_payload.clone());
         self.last_ws_ping_replied_to = false;
         self.ws.send(tungstenite::Message::Ping(ws_payload)).await?;

@@ -10,9 +10,9 @@ use std::num::ParseIntError;
 use std::str::FromStr;
 use std::{error, fmt};
 
+use jiff::Timestamp;
 use serde::{de, ser, Deserialize, Serialize};
 use serde_json::Value;
-use time::{OffsetDateTime, UtcOffset};
 
 /// Describes an account and its preferred name.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -403,19 +403,15 @@ impl<'de> Deserialize<'de> for Snowflake {
 /// Time is specified as a signed 64-bit integer, giving the number of seconds
 /// since the Unix Epoch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Time(#[serde(with = "time::serde::timestamp")] pub OffsetDateTime);
+pub struct Time(#[serde(with = "jiff::fmt::serde::timestamp::second::required")] pub Timestamp);
 
 impl Time {
-    pub fn new(time: OffsetDateTime) -> Self {
-        let time = time
-            .to_offset(UtcOffset::UTC)
-            .replace_millisecond(0)
-            .unwrap();
+    pub fn new(time: Timestamp) -> Self {
         Self(time)
     }
 
     pub fn now() -> Self {
-        Self::new(OffsetDateTime::now_utc())
+        Self::new(Timestamp::now())
     }
 }
 

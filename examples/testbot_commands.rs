@@ -12,8 +12,8 @@ use euphoxide::bot::commands::Commands;
 use euphoxide::bot::instance::{Event, ServerConfig};
 use euphoxide::bot::instances::Instances;
 use euphoxide::conn;
+use jiff::Timestamp;
 use log::error;
-use time::OffsetDateTime;
 use tokio::sync::mpsc;
 
 const HELP: &str = "I'm an example bot for https://github.com/Garmelon/euphoxide";
@@ -74,7 +74,7 @@ impl ClapCommand<Bot, conn::Error> for Test {
 
 struct Bot {
     commands: Arc<Commands<Self, conn::Error>>,
-    start_time: OffsetDateTime,
+    start_time: Timestamp,
     stop: bool,
 }
 
@@ -85,7 +85,7 @@ impl HasDescriptions for Bot {
 }
 
 impl HasStartTime for Bot {
-    fn start_time(&self) -> OffsetDateTime {
+    fn start_time(&self) -> Timestamp {
         self.start_time
     }
 }
@@ -107,7 +107,7 @@ async fn main() {
 
     let mut bot = Bot {
         commands: cmds.clone(),
-        start_time: OffsetDateTime::now_utc(),
+        start_time: Timestamp::now(),
         stop: false,
     };
 

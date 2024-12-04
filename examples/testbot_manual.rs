@@ -6,47 +6,15 @@ use std::time::Duration;
 
 use euphoxide::api::packet::ParsedPacket;
 use euphoxide::api::{Data, Nick, Send};
+use euphoxide::bot::botrulez;
 use euphoxide::conn::{Conn, ConnTx, State};
-use time::OffsetDateTime;
+use jiff::Timestamp;
 
 const TIMEOUT: Duration = Duration::from_secs(10);
 const DOMAIN: &str = "euphoria.leet.nu";
 const ROOM: &str = "test";
 const NICK: &str = "TestBot";
 const HELP: &str = "I'm an example bot for https://github.com/Garmelon/euphoxide";
-
-fn format_delta(delta: time::Duration) -> String {
-    const MINUTE: u64 = 60;
-    const HOUR: u64 = MINUTE * 60;
-    const DAY: u64 = HOUR * 24;
-
-    let mut seconds: u64 = delta.whole_seconds().try_into().unwrap();
-    let mut parts = vec![];
-
-    let days = seconds / DAY;
-    if days > 0 {
-        parts.push(format!("{days}d"));
-        seconds -= days * DAY;
-    }
-
-    let hours = seconds / HOUR;
-    if hours > 0 {
-        parts.push(format!("{hours}h"));
-        seconds -= hours * HOUR;
-    }
-
-    let mins = seconds / MINUTE;
-    if mins > 0 {
-        parts.push(format!("{mins}m"));
-        seconds -= mins * MINUTE;
-    }
-
-    if parts.is_empty() || seconds > 0 {
-        parts.push(format!("{seconds}s"));
-    }
-
-    parts.join(" ")
-}
 
 async fn on_packet(packet: ParsedPacket, conn_tx: &ConnTx, state: &State) -> Result<(), ()> {
     let data = match packet.content {
@@ -112,8 +80,11 @@ async fn on_packet(packet: ParsedPacket, conn_tx: &ConnTx, state: &State) -> Res
                 reply = Some(HELP.to_string());
             } else if content == format!("!uptime @{NICK}") {
                 if let Some(joined) = state.joined() {
-                    let delta = OffsetDateTime::now_utc() - joined.since;
-                    reply = Some(format!("/me has been up for {}", format_delta(delta)));
+                    let delta = Timestamp::now() - joined.since;
+                    reply = Some(format!(
+                        "/me has been up for {}",
+                        botrulez::format_duration(delta)
+                    ));
                 }
             } else if content == "!test" {
                 reply = Some("Test successful!".to_string());

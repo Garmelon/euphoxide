@@ -11,10 +11,10 @@ async-trait = { version = "0.1.80", optional = true }
 caseless = "0.2.1"
 cookie = { version = "0.18.1", optional = true }
 futures-util = { version = "0.3.30", default-features = false, features = ["sink"] }
+jiff = { version = "0.1.15", features = ["serde"] }
 log = "0.4.21"
 serde = { version = "1.0.202", features = ["derive"] }
 serde_json = "1.0.117"
-time = { version = "0.3.36", features = ["serde"] }
 tokio = { version = "1.37.0", features = ["time", "sync", "macros", "rt"] }
 tokio-stream = "0.1.15"
 tokio-tungstenite = { version = "0.21.0", features = ["rustls-tls-native-roots"] }

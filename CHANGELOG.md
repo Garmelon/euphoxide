@@ -14,6 +14,10 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+### Changed
+
+- **(breaking)** Switched to `jiff` from `time`
+
 ## v0.5.1 - 2024-05-20
 
 ### Added
