@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-use std::fmt;
-use std::hash::Hash;
-use std::time::Duration;
-use std::{error, result};
+use std::{collections::HashMap, error, fmt, hash::Hash, result, time::Duration};
 
-use tokio::sync::oneshot::{self, Receiver, Sender};
+use tokio::sync::oneshot;
 
 #[derive(Debug)]
 pub enum Error {
@@ -28,7 +24,7 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Debug)]
 pub struct PendingReply<R> {
     timeout: Duration,
-    result: Receiver<R>,
+    result: oneshot::Receiver<R>,
 }
 
 impl<R> PendingReply<R> {
@@ -44,7 +40,7 @@ impl<R> PendingReply<R> {
 #[derive(Debug)]
 pub struct Replies<I, R> {
     timeout: Duration,
-    pending: HashMap<I, Sender<R>>,
+    pending: HashMap<I, oneshot::Sender<R>>,
 }
 
 impl<I, R> Replies<I, R> {
@@ -53,10 +49,6 @@ impl<I, R> Replies<I, R> {
             timeout,
             pending: HashMap::new(),
         }
-    }
-
-    pub fn timeout(&self) -> Duration {
-        self.timeout
     }
 
     pub fn wait_for(&mut self, id: I) -> PendingReply<R>
