@@ -216,6 +216,17 @@ pub struct ParsedPacket {
 }
 
 impl ParsedPacket {
+    /// Convert a [`Data`]-compatible value into a [`ParsedPacket`].
+    pub fn from_data(id: Option<String>, data: impl Into<Data>) -> Self {
+        let data = data.into();
+        Self {
+            id,
+            r#type: data.packet_type(),
+            content: Ok(data),
+            throttled: None,
+        }
+    }
+
     /// Convert a [`Packet`] into a [`ParsedPacket`].
     ///
     /// This method may fail if the packet data is invalid.
