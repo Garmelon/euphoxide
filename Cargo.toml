@@ -3,44 +3,7 @@ name = "euphoxide"
 version = "0.6.0"
 edition = "2021"
 
-[features]
-bot = ["dep:async-trait", "dep:clap", "dep:cookie"]
-
 [dependencies]
-async-trait = { version = "0.1.86", optional = true }
-caseless = "0.2.2"
-cookie = { version = "0.18.1", optional = true }
-futures-util = { version = "0.3.31", default-features = false, features = ["sink"] }
-jiff = { version = "0.2.1", features = ["serde"] }
-log = "0.4.25"
-serde = { version = "1.0.218", features = ["derive"] }
-serde_json = "1.0.139"
-tokio = { version = "1.43.0", features = ["time", "sync", "macros", "rt"] }
-tokio-stream = "0.1.17"
-tokio-tungstenite = { version = "0.26.2", features = ["rustls-tls-native-roots"] }
-unicode-normalization = "0.1.24"
-
-[dependencies.clap]
-version = "4.5.30"
-optional = true
-default-features = false
-features = ["std", "derive", "deprecated"]
-
-[dev-dependencies] # For example bot
-rustls = "0.23.23"
-tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
-
-[[example]]
-name = "testbot_instance"
-required-features = ["bot"]
-
-[[example]]
-name = "testbot_instances"
-required-features = ["bot"]
-
-[[example]]
-name = "testbot_commands"
-required-features = ["bot"]
 
 [lints]
 rust.unsafe_code = { level = "forbid", priority = 1 }
