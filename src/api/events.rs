@@ -1,4 +1,6 @@
-//! Asynchronous events.
+//! Models [asynchronous events][0].
+//!
+//! [0]: https://euphoria.leet.nu/heim/api#asynchronous-events
 
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +10,8 @@ use super::{
 };
 
 /// Indicates that access to a room is denied.
+///
+/// <https://euphoria.leet.nu/heim/api#bounce-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BounceEvent {
     /// The reason why access was denied.
@@ -25,16 +29,37 @@ pub struct BounceEvent {
 ///
 /// If the disconnect reason is `authentication changed`, the client should
 /// immediately reconnect.
+///
+/// <https://euphoria.leet.nu/heim/api#disconnect-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DisconnectEvent {
     /// The reason for disconnection.
     pub reason: String,
 }
 
+/// Indicates that a message in the room has been modified or deleted.
+///
+/// If the client offers a user interface and the indicated message is currently
+/// displayed, it should update its display accordingly.
+///
+/// The event packet includes a snapshot of the message post-edit.
+///
+/// <https://euphoria.leet.nu/heim/api#edit-message-event>
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EditMessageEvent {
+    /// The id of the edit.
+    pub edit_id: Snowflake,
+    /// The snapshot of the message post-edit.
+    #[serde(flatten)]
+    pub message: Message,
+}
+
 /// Sent by the server to the client when a session is started.
 ///
 /// It includes information about the client's authentication and associated
 /// identity.
+///
+/// <https://euphoria.leet.nu/heim/api#hello-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HelloEvent {
     /// The id of the agent or account logged into this session.
@@ -55,11 +80,15 @@ pub struct HelloEvent {
 }
 
 /// Indicates a session just joined the room.
+///
+/// <https://euphoria.leet.nu/heim/api#join-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JoinEvent(pub SessionView);
 
 /// Sent to all sessions of an agent when that agent is logged in (except for
 /// the session that issued the login command).
+///
+/// <https://euphoria.leet.nu/heim/api#login-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginEvent {
     pub account_id: AccountId,
@@ -67,6 +96,8 @@ pub struct LoginEvent {
 
 /// Sent to all sessions of an agent when that agent is logged out (except for
 /// the session that issued the logout command).
+///
+/// <https://euphoria.leet.nu/heim/api#logout-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogoutEvent {}
 
@@ -75,6 +106,8 @@ pub struct LogoutEvent {}
 ///
 /// If the network event type is `partition`, then this should be treated as a
 /// [`PartEvent`] for all sessions connected to the same server id/era combo.
+///
+/// <https://euphoria.leet.nu/heim/api#network-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NetworkEvent {
     /// The type of network event; for now, always `partition`.
@@ -86,6 +119,8 @@ pub struct NetworkEvent {
 }
 
 /// Announces a nick change by another session in the room.
+///
+/// <https://euphoria.leet.nu/heim/api#nick-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NickEvent {
     /// The id of the session this name applies to.
@@ -98,22 +133,9 @@ pub struct NickEvent {
     pub to: String,
 }
 
-/// Indicates that a message in the room has been modified or deleted.
-///
-/// If the client offers a user interface and the indicated message is currently
-/// displayed, it should update its display accordingly.
-///
-/// The event packet includes a snapshot of the message post-edit.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EditMessageEvent {
-    /// The id of the edit.
-    pub edit_id: Snowflake,
-    /// The snapshot of the message post-edit.
-    #[serde(flatten)]
-    pub message: Message,
-}
-
 /// Indicates a session just disconnected from the room.
+///
+/// <https://euphoria.leet.nu/heim/api#part-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PartEvent(pub SessionView);
 
@@ -121,6 +143,8 @@ pub struct PartEvent(pub SessionView);
 ///
 /// The client should send back a ping-reply with the same value for the time
 /// field as soon as possible (or risk disconnection).
+///
+/// <https://euphoria.leet.nu/heim/api#ping-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PingEvent {
     /// A unix timestamp according to the server's clock.
@@ -131,6 +155,8 @@ pub struct PingEvent {
 }
 
 /// Informs the client that another user wants to chat with them privately.
+///
+/// <https://euphoria.leet.nu/heim/api#pm-initiate-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PmInitiateEvent {
     /// The id of the user inviting the client to chat privately.
@@ -144,12 +170,16 @@ pub struct PmInitiateEvent {
 }
 
 /// Indicates a message received by the room from another session.
+///
+/// <https://euphoria.leet.nu/heim/api#send-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SendEvent(pub Message);
 
 /// Indicates that a session has successfully joined a room.
 ///
 /// It also offers a snapshot of the room’s state and recent history.
+///
+/// <https://euphoria.leet.nu/heim/api#snapshot-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SnapshotEvent {
     /// The id of the agent or account logged into this session.

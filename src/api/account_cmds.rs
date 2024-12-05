@@ -1,8 +1,10 @@
-//! Account commands.
+//! Models [account commands][0] and their replies.
 //!
 //! These commands enable a client to register, associate, and dissociate with
 //! an account. An account allows an identity to be shared across browsers and
 //! devices, and is a prerequisite for room management
+//!
+//! [0]: https://euphoria.leet.nu/heim/api#account-commands
 
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +13,8 @@ use super::AccountId;
 /// Change the primary email address associated with the signed in account.
 ///
 /// The email address may need to be verified before the change is fully applied.
+///
+/// <https://euphoria.leet.nu/heim/api#change-email>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChangeEmail {
     /// The new primary email address for the account.
@@ -32,6 +36,8 @@ pub struct ChangeEmailReply {
 }
 
 /// Change the name associated with the signed in account.
+///
+/// <https://euphoria.leet.nu/heim/api#change-name>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChangeName {
     /// The name to associate with the account.
@@ -46,6 +52,8 @@ pub struct ChangeNameReply {
 }
 
 /// Change the password of the signed in account.
+///
+/// <https://euphoria.leet.nu/heim/api#change-password>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChangePassword {
     /// The current (and soon-to-be former) password.
@@ -65,6 +73,8 @@ pub struct ChangePasswordReply {}
 /// If the login succeeds, the client should expect to receive a
 /// [`DisconnectEvent`](super::DisconnectEvent) shortly after. The next
 /// connection the client makes will be a logged in session.
+///
+/// <https://euphoria.leet.nu/heim/api#login>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Login {
     /// The namespace of a personal identifier.
@@ -98,6 +108,8 @@ pub struct LoginReply {
 /// If the logout is successful, the client should expect to receive a
 /// [`DisconnectEvent`](super::DisconnectEvent) shortly after. The next
 /// connection the client makes will be a logged out session.
+///
+/// <https://euphoria.leet.nu/heim/api#logout>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Logout {}
 
@@ -113,6 +125,8 @@ pub struct LogoutReply {}
 /// [`DisconnectEvent`](super::DisconnectEvent) shortly after. The next
 /// connection the client makes will be a logged in session using the new
 /// account.
+///
+/// <https://euphoria.leet.nu/heim/api#register-account>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterAccount {
     /// The namespace of a personal identifier.
@@ -145,6 +159,8 @@ pub struct RegisterAccountReply {
 ///
 /// An error will be returned if the account has no unverified email addresses
 /// associated with it.
+///
+/// <https://euphoria.leet.nu/heim/api#resend-verification-email>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResendVerificationEmail {}
 
@@ -156,6 +172,8 @@ pub struct ResendVerificationEmailReply {}
 ///
 /// An email will be sent to the owner of the given personal identifier, with
 /// instructions and a confirmation code for resetting the password.
+///
+/// <https://euphoria.leet.nu/heim/api#reset-password>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResetPassword {
     pub namespace: String,
