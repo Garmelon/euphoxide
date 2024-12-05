@@ -1,17 +1,12 @@
-//! Models the [euphoria API][0].
+//! Models the [euphoria.leet.nu API][0].
 //!
 //! [0]: https://euphoria.leet.nu/heim/api
 
-mod account_cmds;
-mod events;
-pub mod packet;
-mod room_cmds;
-mod session_cmds;
-mod types;
+pub mod account_cmds;
+pub mod events;
+pub mod packets;
+pub mod room_cmds;
+pub mod session_cmds;
+pub mod types;
 
-pub use account_cmds::*;
-pub use events::*;
-pub use packet::Data;
-pub use room_cmds::*;
-pub use session_cmds::*;
-pub use types::*;
+pub use self::{account_cmds::*, events::*, packets::*, room_cmds::*, session_cmds::*, types::*};
