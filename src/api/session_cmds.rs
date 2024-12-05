@@ -1,7 +1,9 @@
-//! Session commands.
+//! Models [session commands][0] and their replies.
 //!
 //! Session management commands are involved in the initial handshake and
 //! maintenance of a session.
+//!
+//! [0]: https://euphoria.leet.nu/heim/api#session-commands
 
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +13,8 @@ use super::{AuthOption, Time};
 ///
 /// This should be sent in response to a [`BounceEvent`](super::BounceEvent) at
 /// the beginning of a session.
+///
+/// <https://euphoria.leet.nu/heim/api#auth>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Auth {
     /// The method of authentication.
@@ -32,6 +36,8 @@ pub struct AuthReply {
 ///
 /// The server will send back a [`PingReply`] with the same timestamp as soon as
 /// possible.
+///
+/// <https://euphoria.leet.nu/heim/api#ping>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ping {
     /// An arbitrary value, intended to be a unix timestamp.

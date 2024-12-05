@@ -1,20 +1,16 @@
-//! Field types.
+//! Models the [field types][0].
+//!
+//! [0]: https://euphoria.leet.nu/heim/api#field-types
 
-// TODO Add newtype wrappers for different kinds of IDs?
-
-// Serde's derive macros generate this warning and I can't turn it off locally,
-// so I'm turning it off for the entire module.
-#![allow(clippy::use_self)]
-
-use std::num::ParseIntError;
-use std::str::FromStr;
-use std::{error, fmt};
+use std::{error, fmt, num::ParseIntError, str::FromStr};
 
 use jiff::Timestamp;
 use serde::{de, ser, Deserialize, Serialize};
 use serde_json::Value;
 
 /// Describes an account and its preferred name.
+///
+/// <https://euphoria.leet.nu/heim/api#accountview>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountView {
     /// The id of the account.
@@ -24,6 +20,8 @@ pub struct AccountView {
 }
 
 /// Mode of authentication.
+///
+/// <https://euphoria.leet.nu/heim/api#authoption>
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AuthOption {
@@ -36,6 +34,8 @@ pub enum AuthOption {
 ///
 /// It corresponds to a chat message, or a post, or any broadcasted event in a
 /// room that should appear in the log.
+///
+/// <https://euphoria.leet.nu/heim/api#message>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
     /// The id of the message (unique within a room).
@@ -72,6 +72,8 @@ pub struct Message {
 /// The type of a packet.
 ///
 /// Not all of these types have their corresponding data modeled as a struct.
+///
+/// <https://euphoria.leet.nu/heim/api#packettype>
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum PacketType {
@@ -250,6 +252,8 @@ impl fmt::Display for PacketType {
 }
 
 /// Describes an account to its owner.
+///
+/// <https://euphoria.leet.nu/heim/api#personalaccountview>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PersonalAccountView {
     /// The id of the account.
@@ -261,6 +265,8 @@ pub struct PersonalAccountView {
 }
 
 /// Describes a session and its identity.
+///
+/// <https://euphoria.leet.nu/heim/api#sessionview>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionView {
     /// The id of an agent or account (or bot).
@@ -290,6 +296,8 @@ pub struct SessionView {
 /// A 13-character string, usually used as aunique identifier for some type of object.
 ///
 /// It is the base-36 encoding of an unsigned, 64-bit integer.
+///
+/// <https://euphoria.leet.nu/heim/api#snowflake>
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Snowflake(pub u64);
 
@@ -307,7 +315,7 @@ impl Snowflake {
     /// representation of message ids to suddenly use the upper parts of the
     /// range, and since message ids mostly consist of a timestamp, this
     /// approach should last until at least 2075.
-    pub const MAX: Self = Snowflake(i64::MAX as u64);
+    pub const MAX: Self = Self(i64::MAX as u64);
 }
 
 impl fmt::Display for Snowflake {
@@ -324,6 +332,7 @@ impl fmt::Display for Snowflake {
     }
 }
 
+/// An error that occurred while parsing a [`Snowflake`].
 #[derive(Debug)]
 pub enum ParseSnowflakeError {
     InvalidLength(usize),
@@ -365,7 +374,7 @@ impl FromStr for Snowflake {
             return Err(ParseSnowflakeError::InvalidLength(s.len()));
         }
         let n = u64::from_str_radix(s, 36)?;
-        Ok(Snowflake(n))
+        Ok(Self(n))
     }
 }
 
@@ -402,6 +411,8 @@ impl<'de> Deserialize<'de> for Snowflake {
 
 /// Time is specified as a signed 64-bit integer, giving the number of seconds
 /// since the Unix Epoch.
+///
+/// <https://euphoria.leet.nu/heim/api#time>
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Time(pub i64);
 
@@ -426,6 +437,8 @@ impl Time {
 ///
 /// It is possible for this value to have no prefix and colon, and there is no
 /// fixed format for the unique value.
+///
+/// <https://euphoria.leet.nu/heim/api#userid>
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct UserId(pub String);
 
@@ -435,21 +448,27 @@ impl fmt::Display for UserId {
     }
 }
 
+/// What kind of user a [`UserId`] is.
 #[derive(Debug, PartialEq, Eq)]
-pub enum SessionType {
+pub enum UserType {
     Agent,
     Account,
     Bot,
 }
 
 impl UserId {
-    pub fn session_type(&self) -> Option<SessionType> {
+    /// Retrieve the [`UserType`] of this user.
+    ///
+    /// This method can return [`None`] because user IDs used to have no
+    /// associated type. Such user IDs can still occur in old room logs, so
+    /// euphoxide supports them.
+    pub fn user_type(&self) -> Option<UserType> {
         if self.0.starts_with("agent:") {
-            Some(SessionType::Agent)
+            Some(UserType::Agent)
         } else if self.0.starts_with("account:") {
-            Some(SessionType::Account)
+            Some(UserType::Account)
         } else if self.0.starts_with("bot:") {
-            Some(SessionType::Bot)
+            Some(UserType::Bot)
         } else {
             None
         }

@@ -1,13 +1,17 @@
-//! Chat room commands.
+//! Models [chat room commands][0] and their replies.
 //!
 //! These commands are available to the client once a session successfully joins
 //! a room.
+//!
+//! [0]: https://euphoria.leet.nu/heim/api#chat-room-commands
 
 use serde::{Deserialize, Serialize};
 
 use super::{Message, MessageId, PmId, SessionId, SessionView, UserId};
 
 /// Retrieve the full content of a single message in the room.
+///
+/// <https://euphoria.leet.nu/heim/api#get-message>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GetMessage {
     /// The id of the message to retrieve.
@@ -23,6 +27,8 @@ pub struct GetMessageReply(pub Message);
 /// This can be used to supplement the log provided by
 /// [`SnapshotEvent`](super::SnapshotEvent) (for example, when scrolling back
 /// further in history).
+///
+/// <https://euphoria.leet.nu/heim/api#log>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Log {
     /// Maximum number of messages to return (up to 1000).
@@ -44,6 +50,8 @@ pub struct LogReply {
 ///
 /// This name applies to all messages sent during this session, until the nick
 /// command is called again.
+///
+/// <https://euphoria.leet.nu/heim/api#nick>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Nick {
     /// The requested name (maximum length 36 bytes).
@@ -68,6 +76,8 @@ pub struct NickReply {
 
 /// Constructs a virtual room for private messaging between the client and the
 /// given [`UserId`].
+///
+/// <https://euphoria.leet.nu/heim/api#pm-initiate>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PmInitiate {
     /// The id of the user to invite to chat privately.
@@ -94,6 +104,8 @@ pub struct PmInitiateReply {
 /// The caller of this command will not receive the corresponding
 /// [`SendEvent`](super::SendEvent), but will receive the same information in
 /// the [`SendReply`].
+///
+/// <https://euphoria.leet.nu/heim/api#send>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Send {
     /// The content of the message (client-defined).
@@ -109,6 +121,8 @@ pub struct Send {
 pub struct SendReply(pub Message);
 
 /// Request a list of sessions currently joined in the room.
+///
+/// <https://euphoria.leet.nu/heim/api#who>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Who {}
 
