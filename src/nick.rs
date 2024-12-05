@@ -81,17 +81,18 @@ pub fn hue(emoji: &Emoji, nick: &str) -> u8 {
 /// 1. Apply [`mention`]
 /// 2. Convert to NFKC
 /// 3. Case fold
+/// 4. Convert to NFC
 ///
-/// Steps 2 and 3 are meant to be an alternative to the NKFC_Casefold derived
-/// property that's easier to implement, even though it may be incorrect in some
-/// edge cases.
-///
-/// [0]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/stores/chat.js#L14
+/// Steps 2 to 4 are meant to emulate NKFC_Casefold, but may differ in some edge
+/// cases. Most notably, they don't ignore default ignorable code points. Maybe
+/// there are also other edge cases I don't know about.
 pub fn normalize(nick: &str) -> String {
     mention(nick) // Step 1
         .nfkc() // Step 2
         .default_case_fold() // Step 3
-        .collect()
+        .collect::<String>()
+        .nfc() // Step 4
+        .collect::<String>()
 }
 
 fn is_non_whitespace_delimiter(c: char) -> bool {
@@ -108,12 +109,14 @@ fn is_non_whitespace_delimiter(c: char) -> bool {
 /// highlight as a mention in the official euphoria client. It should ping any
 /// people using the original nick. It might also ping other people.
 ///
-/// In the official euphoria client, mentions are non-whitespace characters
+/// [In the official euphoria client][0], mentions are non-whitespace characters
 /// delimited by whitespace and any of the following characters:
 ///
 /// `,`, `.`, `!`, `?`, `;`, `&`, `<`, `>`, `'`, `"`.
 ///
 /// The first character of a mention may be a delimiting character.
+///
+/// [0]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/stores/chat.js#L14
 pub fn mention(nick: &str) -> String {
     let mut nick = nick.chars().filter(|c| !c.is_whitespace());
     let mut result = String::new();
