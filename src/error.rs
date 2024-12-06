@@ -29,6 +29,26 @@ pub enum Error {
 
     /// A tungstenite error.
     Tungstenite(tungstenite::Error),
+
+    /// A timeout occurred while opening a connection.
+    ///
+    /// This is a higher-level error that only occurs in the
+    /// [`ClientConn`](crate::client::conn::ClientConn).
+    ConnectionTimeout,
+
+    /// The server did not reply to a command in time.
+    ///
+    /// This is a higher-level error that only occurs with
+    /// [`Command`](crate::api::Command)-based APIs in
+    /// [`ClientConn`](crate::client::conn::ClientConn).
+    CommandTimeout,
+
+    /// The server replied with an error string.
+    ///
+    /// This is a higher-level error that only occurs with
+    /// [`Command`](crate::api::Command)-based APIs in
+    /// [`ClientConn`](crate::client::conn::ClientConn).
+    Euph(String),
 }
 
 impl fmt::Display for Error {
@@ -43,6 +63,9 @@ impl fmt::Display for Error {
                 write!(f, "received packet of unexpected type: {ptype}")
             }
             Self::Tungstenite(err) => write!(f, "{err}"),
+            Self::ConnectionTimeout => write!(f, "connection timed out while connecting"),
+            Self::CommandTimeout => write!(f, "command timed out"),
+            Self::Euph(msg) => write!(f, "{msg}"),
         }
     }
 }
