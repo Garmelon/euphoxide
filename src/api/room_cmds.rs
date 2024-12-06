@@ -129,6 +129,6 @@ pub struct Who {}
 /// Lists the sessions currently joined in the room.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WhoReply {
-    /// A list of session views.
+    /// A list of session views (including our session).
     pub listing: Vec<SessionView>,
 }

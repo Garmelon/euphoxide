@@ -188,7 +188,7 @@ pub struct SnapshotEvent {
     pub session_id: SessionId,
     /// The server’s version identifier.
     pub version: String,
-    /// The list of all other sessions joined to the room (excluding this
+    /// The list of all other sessions joined to the room (excluding our
     /// session).
     pub listing: Vec<SessionView>,
     /// The most recent messages posted to the room (currently up to 100).
