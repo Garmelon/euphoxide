@@ -1,6 +1,6 @@
 //! Basic connection between client and server.
 
-use std::{error, fmt, result, time::Duration};
+use std::{fmt, time::Duration};
 
 use futures_util::{SinkExt, StreamExt};
 use jiff::Timestamp;
@@ -11,56 +11,14 @@ use tokio::{
     time::{self, Instant},
 };
 use tokio_tungstenite::{
-    tungstenite::{self, client::IntoClientRequest, handshake::client::Response, Message},
+    tungstenite::{client::IntoClientRequest, handshake::client::Response, Message},
     MaybeTlsStream, WebSocketStream,
 };
 
-use crate::api::{Data, Packet, PacketType, ParsedPacket, Ping, PingEvent, PingReply, Time};
-
-/// An error that can occur while using an [`EuphConn`].
-#[derive(Debug)]
-pub enum Error {
-    /// The connection is closed.
-    ConnectionClosed,
-
-    /// A ping was not replied to in time.
-    PingTimeout,
-
-    /// A packet was not sent because it was malformed.
-    MalformedPacket(serde_json::Error),
-
-    /// A malformed packet was received.
-    ReceivedMalformedPacket(serde_json::Error),
-
-    /// A binary message was received.
-    ReceivedBinaryMessage,
-
-    Tungstenite(tungstenite::Error),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::ConnectionClosed => write!(f, "connection closed"),
-            Self::PingTimeout => write!(f, "ping timed out"),
-            Self::MalformedPacket(err) => write!(f, "malformed packet: {err}"),
-            Self::ReceivedMalformedPacket(err) => write!(f, "received malformed packet: {err}"),
-            Self::ReceivedBinaryMessage => write!(f, "received binary message"),
-            Self::Tungstenite(err) => write!(f, "{err}"),
-        }
-    }
-}
-
-impl error::Error for Error {}
-
-impl From<tungstenite::Error> for Error {
-    fn from(err: tungstenite::Error) -> Self {
-        Self::Tungstenite(err)
-    }
-}
-
-/// An alias of [`Result`](result::Result) for [`Error`].
-pub type Result<T> = result::Result<T, Error>;
+use crate::{
+    api::{Data, Packet, PacketType, ParsedPacket, Ping, PingEvent, PingReply, Time},
+    error::{Error, Result},
+};
 
 /// Which side of the connection we're on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
