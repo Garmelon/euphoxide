@@ -5,6 +5,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::error::{self, Error};
+
 use super::PacketType;
 
 /// A "raw" packet.
@@ -227,6 +229,10 @@ impl ParsedPacket {
         }
     }
 
+    pub fn into_data(self) -> error::Result<Data> {
+        self.content.map_err(Error::Euph)
+    }
+
     /// Convert a [`Packet`] into a [`ParsedPacket`].
     ///
     /// This method may fail if the packet data is invalid.
@@ -301,5 +307,13 @@ impl TryFrom<ParsedPacket> for Packet {
 
     fn try_from(value: ParsedPacket) -> Result<Self, Self::Error> {
         value.into_packet()
+    }
+}
+
+impl TryFrom<ParsedPacket> for Data {
+    type Error = Error;
+
+    fn try_from(value: ParsedPacket) -> Result<Self, Self::Error> {
+        value.into_data()
     }
 }
