@@ -14,6 +14,12 @@ tokio = { version = "1.42.0", features = ["macros", "sync", "time"] }
 tokio-tungstenite = "0.24.0"
 unicode-normalization = "0.1.24"
 
+[dev-dependencies]
+anyhow = "1.0.94"
+rustls = "0.23.19"
+tokio = { version = "1.42.0", features = ["full"] }
+tokio-tungstenite = { version = "0.24.0", features = ["rustls-tls-native-roots"] }
+
 [lints]
 rust.unsafe_code = { level = "forbid", priority = 1 }
 # Lint groups
