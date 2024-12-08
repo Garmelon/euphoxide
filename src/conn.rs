@@ -17,7 +17,7 @@ use tokio_tungstenite::{
 
 use crate::{
     api::{Data, Packet, PacketType, ParsedPacket, Ping, PingEvent, PingReply, Time},
-    error::{Error, Result},
+    Error, Result,
 };
 
 /// Which side of the connection we're on.
