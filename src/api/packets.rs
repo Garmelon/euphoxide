@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::error::{self, Error};
+use crate::Error;
 
 use super::PacketType;
 
@@ -229,7 +229,7 @@ impl ParsedPacket {
         }
     }
 
-    pub fn into_data(self) -> error::Result<Data> {
+    pub fn into_data(self) -> crate::Result<Data> {
         self.content.map_err(Error::Euph)
     }
 
