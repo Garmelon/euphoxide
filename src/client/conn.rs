@@ -13,8 +13,8 @@ use tokio_tungstenite::tungstenite::{
 use crate::{
     api::{Command, Data, ParsedPacket},
     conn::{Conn, ConnConfig, Side},
-    error::{Error, Result},
     replies::{self, PendingReply, Replies},
+    Error, Result,
 };
 
 use super::state::State;
