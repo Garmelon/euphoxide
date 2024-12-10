@@ -1,3 +1,5 @@
+//! Client-specific connection with a more expressive API.
+
 use std::{future::Future, time::Duration};
 
 use log::debug;
@@ -24,13 +26,27 @@ enum ConnCommand {
     GetState(oneshot::Sender<State>),
 }
 
+/// Configuration options for a [`ClientConn`].
 #[derive(Debug, Clone)]
 pub struct ClientConnConfig {
+    /// The domain where the server is hosted.
     pub domain: String,
+    /// Whether the client should present itself as a human to the server.
+    ///
+    /// This should only be set if the client is directly acting on behalf of a
+    /// human, similar to the web client.
     pub human: bool,
+    /// The size of the [`mpsc::channel`] for communication between
+    /// [`ClientConn`] and [`ClientConnHandle`].
     pub channel_bufsize: usize,
+    /// Timeout for opening a websocket connection.
     pub connect_timeout: Duration,
+    /// Timeout for server replies when sending euphoria commands, i.e. packets
+    /// implementing [`Command`].
     pub command_timeout: Duration,
+    /// How long to wait in-between sending pings.
+    ///
+    /// See also [`ConnConfig::ping_interval`].
     pub ping_interval: Duration,
 }
 
@@ -47,6 +63,12 @@ impl Default for ClientConnConfig {
     }
 }
 
+/// A client connection to an euphoria server.
+///
+/// This struct is a wrapper around [`Conn`] with a more client-centric API. It
+/// tracks the connection state, including room information sent by the server.
+/// It also provides [`ClientConnHandle`], which can be used to asynchronously
+/// send commands and await their replies.
 pub struct ClientConn {
     rx: mpsc::Receiver<ConnCommand>,
     tx: mpsc::Sender<ConnCommand>,
@@ -59,20 +81,33 @@ pub struct ClientConn {
 }
 
 impl ClientConn {
+    /// Retrieve the current [`State`] of the connection.
     pub fn state(&self) -> &State {
         &self.state
     }
 
+    /// Create a new handle for this connection.
     pub fn handle(&self) -> ClientConnHandle {
         ClientConnHandle {
             tx: self.tx.clone(),
         }
     }
 
+    /// Start closing the connection.
+    ///
+    /// To finish closing the connection gracefully, continue calling
+    /// [`Self::recv`] until it returns [`None`].
     pub async fn close(&mut self) -> Result<()> {
         self.conn.close().await
     }
 
+    /// Receive a [`ParsedPacket`] over the connection.
+    ///
+    /// This method also maintains the connection by listening and responding to
+    /// pings as well as managing [`ClientConnHandle`]s. Thus, it must be called
+    /// regularly.
+    ///
+    /// Returns [`None`] if the connection is closed.
     pub async fn recv(&mut self) -> Result<Option<ParsedPacket>> {
         loop {
             self.replies.purge();
@@ -95,6 +130,10 @@ impl ClientConn {
         }
     }
 
+    /// Send a packet over the connection.
+    ///
+    /// A packet id is automatically generated and returned. When the server
+    /// replies to the packet, it will use this id as its [`ParsedPacket::id`].
     pub async fn send(&mut self, data: impl Into<Data>) -> Result<String> {
         // Overkill of universe-heat-death-like proportions
         self.last_id = self.last_id.wrapping_add(1);
@@ -130,6 +169,9 @@ impl ClientConn {
         }
     }
 
+    /// Connect to a room.
+    ///
+    /// See [`Self::connect_with_config`] for more details.
     pub async fn connect(
         room: &str,
         cookies: Option<HeaderValue>,
@@ -137,6 +179,18 @@ impl ClientConn {
         Self::connect_with_config(room, cookies, &ClientConnConfig::default()).await
     }
 
+    /// Connect to a room with a specific configuration.
+    ///
+    /// Cookies to be sent to the server can be specified as a [`HeaderValue`]
+    /// in the format of a [`Cookie` request header][0]. If the connection
+    /// attempt was successful, cookies set by the server will be returned
+    /// alongside the connection itself as one [`HeaderValue`] per [`Set-Cookie`
+    /// response header][1].
+    ///
+    /// The tasks of cookie parsing and storage are not handled by this library.
+    ///
+    /// [0]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie
+    /// [1]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
     pub async fn connect_with_config(
         room: &str,
         cookies: Option<HeaderValue>,
@@ -190,6 +244,14 @@ impl ClientConn {
     }
 }
 
+/// Asynchronous access to a [`ClientConn`].
+///
+/// Handle methods are only processed while [`ClientConn::recv`] is being
+/// called. They may return before they were processed by the associated
+/// [`ClientConn`], or they may block until processed. Methods are processed in
+/// the order they are called.
+///
+/// The handle is cheap to clone.
 #[derive(Debug, Clone)]
 pub struct ClientConnHandle {
     tx: mpsc::Sender<ConnCommand>,
