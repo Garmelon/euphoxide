@@ -32,7 +32,10 @@ pub enum Side {
 /// Configuration options for a [`Conn`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnConfig {
-    /// How long to wait in-between pings.
+    /// How long to wait in-between sending pings.
+    ///
+    /// This includes both websocket and euphoria pings ([`Ping`] or
+    /// [`PingEvent`]).
     pub ping_interval: Duration,
 }
 
@@ -117,7 +120,10 @@ impl Conn {
         }
     }
 
-    /// Close the connection gracefully.
+    /// Start closing the connection.
+    ///
+    /// To finish closing the connection gracefully, continue calling
+    /// [`Self::recv_raw`] or [`Self::recv`] until they return [`None`].
     pub async fn close(&mut self) -> Result<()> {
         self.ws.close(None).await?;
         Ok(())
