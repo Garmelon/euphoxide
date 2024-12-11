@@ -1,13 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["euphoxide", "euphoxide-client"]
+members = ["euphoxide", "euphoxide-bot", "euphoxide-client"]
 
 [workspace.package]
 version = "0.6.0"
 edition = "2021"
 
 [workspace.dependencies]
+async-trait = "0.1.83"
 caseless = "0.2.1"
+clap = { version = "4.5.23", default-features = false, features = ["std"] }
 cookie = "0.18.1"
 futures-util = "0.3.31"
 jiff = { version = "0.1.15", default-features = false, features = ["std"] }
@@ -22,6 +24,7 @@ anyhow = "1.0.94"
 rustls = "0.23.19"
 # In this workspace
 euphoxide = { path = "./euphoxide" }
+euphoxide-bot = { path = "./euphoxide-bot" }
 euphoxide-client = { path = "./euphoxide-client" }
 
 [workspace.lints]

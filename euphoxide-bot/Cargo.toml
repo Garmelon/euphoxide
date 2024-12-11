@@ -1,0 +1,21 @@
+[package]
+name = "euphoxide-bot"
+version = { workspace = true }
+edition = { workspace = true }
+
+[features]
+clap = ["dep:clap"]
+
+[dependencies]
+async-trait = { workspace = true }
+clap = { workspace = true, optional = true, features = ["derive"] }
+cookie = { workspace = true }
+euphoxide = { workspace = true }
+euphoxide-client = { workspace = true }
+jiff = { workspace = true }
+log = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
+tokio-tungstenite = { workspace = true }
+
+[lints]
+workspace = true
