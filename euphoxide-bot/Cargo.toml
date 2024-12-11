@@ -10,5 +10,11 @@ log = { workspace = true }
 tokio = { workspace = true, features = ["rt"] }
 tokio-tungstenite = { workspace = true }
 
+[dev-dependencies]
+anyhow = { workspace = true }
+rustls = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-tungstenite = { workspace = true, features = ["rustls-tls-native-roots"] }
+
 [lints]
 workspace = true
