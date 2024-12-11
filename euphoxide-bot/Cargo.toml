@@ -1,0 +1,14 @@
+[package]
+name = "euphoxide-bot"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+cookie = { workspace = true }
+euphoxide = { path = "../euphoxide" }
+log = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
+tokio-tungstenite = { workspace = true }
+
+[lints]
+workspace = true
