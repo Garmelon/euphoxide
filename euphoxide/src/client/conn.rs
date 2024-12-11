@@ -55,7 +55,7 @@ impl Default for ClientConnConfig {
         Self {
             domain: "euphoria.leet.nu".to_string(),
             human: false,
-            channel_bufsize: 10,
+            channel_bufsize: 1,
             connect_timeout: Duration::from_secs(10),
             command_timeout: Duration::from_secs(30),
             ping_interval: Duration::from_secs(30),
