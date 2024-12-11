@@ -13,7 +13,7 @@ use tokio_tungstenite::tungstenite::{
 };
 
 use crate::{
-    api::{Command, Data, ParsedPacket},
+    api::{Command, Data, LoginReply, ParsedPacket},
     conn::{Conn, ConnConfig, Side},
     replies::{self, PendingReply, Replies},
     Error, Result,
@@ -123,7 +123,7 @@ impl ClientConn {
             };
 
             if let Some(packet) = &packet {
-                self.on_packet(packet);
+                self.on_packet(packet).await?;
             }
 
             break Ok(packet);
@@ -146,15 +146,31 @@ impl ClientConn {
         Ok(id)
     }
 
-    fn on_packet(&mut self, packet: &ParsedPacket) {
+    async fn on_packet(&mut self, packet: &ParsedPacket) -> Result<()> {
         if let Ok(data) = &packet.content {
             self.state.on_data(data);
+
+            // The euphoria server doesn't always disconnect the client when it
+            // would make sense to do so or when the API specifies it should.
+            // This ensures we always disconnect when it makes sense to do so.
+            if matches!(
+                data,
+                Data::DisconnectEvent(_)
+                    | Data::LoginEvent(_)
+                    | Data::LogoutEvent(_)
+                    | Data::LoginReply(LoginReply { success: true, .. })
+                    | Data::LogoutReply(_)
+            ) {
+                self.close().await?;
+            }
         }
 
         if let Some(id) = &packet.id {
             let id = id.clone();
             self.replies.complete(&id, packet.clone());
         }
+
+        Ok(())
     }
 
     async fn on_cmd(&mut self, cmd: ConnCommand) {
