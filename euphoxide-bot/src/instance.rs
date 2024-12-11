@@ -103,6 +103,20 @@ pub enum InstanceEvent<I> {
     },
 }
 
+impl<I> InstanceEvent<I> {
+    pub fn id(&self) -> &I {
+        match self {
+            Self::Started { id } => id,
+            Self::Connecting { id } => id,
+            Self::Connected { id, .. } => id,
+            Self::Joined { id, .. } => id,
+            Self::Packet { id, .. } => id,
+            Self::Disconnected { id } => id,
+            Self::Stopped { id } => id,
+        }
+    }
+}
+
 struct InstanceTask<I> {
     id: I,
     config: InstanceConfig,
@@ -342,9 +356,8 @@ impl<I: fmt::Debug> fmt::Debug for Instance<I> {
 }
 
 impl<I: Clone + fmt::Debug + Send + 'static> Instance<I> {
-    pub fn new(id: I, config: InstanceConfig) -> (Self, mpsc::Receiver<InstanceEvent<I>>) {
+    pub fn new(id: I, config: InstanceConfig, event_tx: mpsc::Sender<InstanceEvent<I>>) -> Self {
         let (cmd_tx, cmd_rx) = mpsc::channel(config.server.cmd_channel_bufsize);
-        let (event_tx, event_rx) = mpsc::channel(config.server.event_channel_bufsize);
 
         let task = InstanceTask {
             id: id.clone(),
@@ -357,7 +370,7 @@ impl<I: Clone + fmt::Debug + Send + 'static> Instance<I> {
 
         tokio::task::spawn(task.run());
 
-        (Self { id, cmd_tx }, event_rx)
+        Self { id, cmd_tx }
     }
 }
 

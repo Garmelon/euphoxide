@@ -13,7 +13,19 @@ pub struct ServerConfig {
     pub join_attempts: usize,
     pub reconnect_delay: Duration,
     pub cmd_channel_bufsize: usize,
-    pub event_channel_bufsize: usize,
+}
+
+impl ServerConfig {
+    pub fn instance(self, room: impl ToString) -> InstanceConfig {
+        InstanceConfig {
+            server: self,
+            room: room.to_string(),
+            human: false,
+            username: None,
+            force_username: false,
+            password: None,
+        }
+    }
 }
 
 impl Default for ServerConfig {
@@ -24,7 +36,6 @@ impl Default for ServerConfig {
             join_attempts: 5,
             reconnect_delay: Duration::from_secs(30),
             cmd_channel_bufsize: 1,
-            event_channel_bufsize: 10,
         }
     }
 }
@@ -40,17 +51,6 @@ pub struct InstanceConfig {
 }
 
 impl InstanceConfig {
-    pub fn new(room: impl ToString) -> Self {
-        Self {
-            server: ServerConfig::default(),
-            room: room.to_string(),
-            human: false,
-            username: None,
-            force_username: false,
-            password: None,
-        }
-    }
-
     pub fn with_username(mut self, username: impl ToString) -> Self {
         self.username = Some(username.to_string());
         self
@@ -64,5 +64,19 @@ impl InstanceConfig {
     pub fn with_password(mut self, password: impl ToString) -> Self {
         self.password = Some(password.to_string());
         self
+    }
+}
+
+pub struct BotConfig {
+    pub event_timeout: Duration,
+    pub event_channel_bufsize: usize,
+}
+
+impl Default for BotConfig {
+    fn default() -> Self {
+        Self {
+            event_timeout: Duration::from_secs(1),
+            event_channel_bufsize: 10,
+        }
     }
 }
