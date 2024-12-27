@@ -72,63 +72,63 @@ enum Command {
 }
 
 #[derive(Debug)]
-pub enum InstanceEvent<I> {
+pub enum InstanceEvent {
     Started {
-        id: I,
+        id: usize,
     },
     Connecting {
-        id: I,
+        id: usize,
     },
     Connected {
-        id: I,
+        id: usize,
         conn: ClientConnHandle,
         state: State,
     },
     Joined {
-        id: I,
+        id: usize,
         conn: ClientConnHandle,
         state: State,
     },
     Packet {
-        id: I,
+        id: usize,
         conn: ClientConnHandle,
         state: State,
         packet: ParsedPacket,
     },
     Disconnected {
-        id: I,
+        id: usize,
     },
     Stopped {
-        id: I,
+        id: usize,
     },
 }
 
-impl<I> InstanceEvent<I> {
-    pub fn id(&self) -> &I {
+impl InstanceEvent {
+    pub fn id(&self) -> usize {
         match self {
-            Self::Started { id } => id,
-            Self::Connecting { id } => id,
-            Self::Connected { id, .. } => id,
-            Self::Joined { id, .. } => id,
-            Self::Packet { id, .. } => id,
-            Self::Disconnected { id } => id,
-            Self::Stopped { id } => id,
+            Self::Started { id } => *id,
+            Self::Connecting { id } => *id,
+            Self::Connected { id, .. } => *id,
+            Self::Joined { id, .. } => *id,
+            Self::Packet { id, .. } => *id,
+            Self::Disconnected { id } => *id,
+            Self::Stopped { id } => *id,
         }
     }
 }
 
-struct InstanceTask<I> {
-    id: I,
+struct InstanceTask {
+    id: usize,
     config: InstanceConfig,
 
     cmd_rx: mpsc::Receiver<Command>,
-    event_tx: mpsc::Sender<InstanceEvent<I>>,
+    event_tx: mpsc::Sender<InstanceEvent>,
 
     attempts: usize,
     never_joined: bool,
 }
 
-impl<I: Clone + fmt::Debug> InstanceTask<I> {
+impl InstanceTask {
     fn get_cookies(&self) -> Option<HeaderValue> {
         self.config
             .server
@@ -173,7 +173,7 @@ impl<I: Clone + fmt::Debug> InstanceTask<I> {
         let _ = self
             .event_tx
             .send(InstanceEvent::Joined {
-                id: self.id.clone(),
+                id: self.id,
                 conn: conn.handle(),
                 state: conn.state().clone(),
             })
@@ -184,7 +184,7 @@ impl<I: Clone + fmt::Debug> InstanceTask<I> {
         let _ = self
             .event_tx
             .send(InstanceEvent::Packet {
-                id: self.id.clone(),
+                id: self.id,
                 conn: conn.handle(),
                 state: conn.state().clone(),
                 packet: packet.clone(),
@@ -261,9 +261,7 @@ impl<I: Clone + fmt::Debug> InstanceTask<I> {
 
         let _ = self
             .event_tx
-            .send(InstanceEvent::Connecting {
-                id: self.id.clone(),
-            })
+            .send(InstanceEvent::Connecting { id: self.id })
             .await;
 
         let mut conn = match self.connect().await {
@@ -283,7 +281,7 @@ impl<I: Clone + fmt::Debug> InstanceTask<I> {
         let _ = self
             .event_tx
             .send(InstanceEvent::Connected {
-                id: self.id.clone(),
+                id: self.id,
                 conn: conn.handle(),
                 state: conn.state().clone(),
             })
@@ -307,9 +305,7 @@ impl<I: Clone + fmt::Debug> InstanceTask<I> {
 
         let _ = self
             .event_tx
-            .send(InstanceEvent::Disconnected {
-                id: self.id.clone(),
-            })
+            .send(InstanceEvent::Disconnected { id: self.id })
             .await;
 
         result
@@ -318,9 +314,7 @@ impl<I: Clone + fmt::Debug> InstanceTask<I> {
     async fn run(mut self) {
         let _ = self
             .event_tx
-            .send(InstanceEvent::Started {
-                id: self.id.clone(),
-            })
+            .send(InstanceEvent::Started { id: self.id })
             .await;
 
         loop {
@@ -334,20 +328,18 @@ impl<I: Clone + fmt::Debug> InstanceTask<I> {
 
         let _ = self
             .event_tx
-            .send(InstanceEvent::Stopped {
-                id: self.id.clone(),
-            })
+            .send(InstanceEvent::Stopped { id: self.id })
             .await;
     }
 }
 
 #[derive(Clone)]
-pub struct Instance<I> {
-    id: I,
+pub struct Instance {
+    id: usize,
     cmd_tx: mpsc::Sender<Command>,
 }
 
-impl<I: fmt::Debug> fmt::Debug for Instance<I> {
+impl fmt::Debug for Instance {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Instance")
             .field("id", &self.id)
@@ -355,12 +347,12 @@ impl<I: fmt::Debug> fmt::Debug for Instance<I> {
     }
 }
 
-impl<I: Clone + fmt::Debug + Send + 'static> Instance<I> {
-    pub fn new(id: I, config: InstanceConfig, event_tx: mpsc::Sender<InstanceEvent<I>>) -> Self {
+impl Instance {
+    pub fn new(id: usize, config: InstanceConfig, event_tx: mpsc::Sender<InstanceEvent>) -> Self {
         let (cmd_tx, cmd_rx) = mpsc::channel(config.server.cmd_channel_bufsize);
 
         let task = InstanceTask {
-            id: id.clone(),
+            id,
             config,
             attempts: 0,
             never_joined: false,
@@ -372,11 +364,9 @@ impl<I: Clone + fmt::Debug + Send + 'static> Instance<I> {
 
         Self { id, cmd_tx }
     }
-}
 
-impl<I> Instance<I> {
-    pub fn id(&self) -> &I {
-        &self.id
+    pub fn id(&self) -> usize {
+        self.id
     }
 
     pub fn stopped(&self) -> bool {

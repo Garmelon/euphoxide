@@ -77,7 +77,7 @@ async fn run() -> anyhow::Result<()> {
         .instance("test")
         .with_username("examplebot");
 
-    bot.add_instance((), config);
+    bot.add_instance(config);
 
     while let Some(event) = bot.recv().await {
         if let BotEvent::Packet { conn, packet, .. } = event {

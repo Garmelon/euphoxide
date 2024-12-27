@@ -77,7 +77,7 @@ async fn run() -> anyhow::Result<()> {
         .with_username("examplebot");
 
     let (event_tx, mut event_rx) = mpsc::channel(10);
-    let _instance = Instance::new((), config, event_tx); // Don't drop or instance stops
+    let _instance = Instance::new(0, config, event_tx); // Don't drop or instance stops
 
     while let Some(event) = event_rx.recv().await {
         if let InstanceEvent::Packet { conn, packet, .. } = event {

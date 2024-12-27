@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fmt, hash,
     sync::{Arc, RwLock},
 };
 
@@ -13,39 +12,39 @@ use tokio::sync::mpsc;
 use crate::{BotConfig, Instance, InstanceConfig, InstanceEvent};
 
 #[derive(Debug)]
-pub enum BotEvent<I> {
+pub enum BotEvent {
     Started {
-        instance: Instance<I>,
+        instance: Instance,
     },
     Connecting {
-        instance: Instance<I>,
+        instance: Instance,
     },
     Connected {
-        instance: Instance<I>,
+        instance: Instance,
         conn: ClientConnHandle,
         state: State,
     },
     Joined {
-        instance: Instance<I>,
+        instance: Instance,
         conn: ClientConnHandle,
         state: State,
     },
     Packet {
-        instance: Instance<I>,
+        instance: Instance,
         conn: ClientConnHandle,
         state: State,
         packet: ParsedPacket,
     },
     Disconnected {
-        instance: Instance<I>,
+        instance: Instance,
     },
     Stopped {
-        instance: Instance<I>,
+        instance: Instance,
     },
 }
 
-impl<I> BotEvent<I> {
-    fn from_instance_event(instance: Instance<I>, event: InstanceEvent<I>) -> Self {
+impl BotEvent {
+    fn from_instance_event(instance: Instance, event: InstanceEvent) -> Self {
         match event {
             InstanceEvent::Started { id: _ } => Self::Started { instance },
             InstanceEvent::Connecting { id: _ } => Self::Connecting { instance },
@@ -75,7 +74,7 @@ impl<I> BotEvent<I> {
         }
     }
 
-    pub fn instance(&self) -> &Instance<I> {
+    pub fn instance(&self) -> &Instance {
         match self {
             Self::Started { instance } => instance,
             Self::Connecting { instance, .. } => instance,
@@ -88,14 +87,15 @@ impl<I> BotEvent<I> {
     }
 }
 
-pub struct Bot<I> {
+pub struct Bot {
     config: BotConfig,
-    instances: Arc<RwLock<HashMap<I, Instance<I>>>>,
-    event_tx: mpsc::Sender<InstanceEvent<I>>,
-    event_rx: mpsc::Receiver<InstanceEvent<I>>,
+    next_id: usize,
+    instances: Arc<RwLock<HashMap<usize, Instance>>>,
+    event_tx: mpsc::Sender<InstanceEvent>,
+    event_rx: mpsc::Receiver<InstanceEvent>,
 }
 
-impl<I> Bot<I> {
+impl Bot {
     pub fn new() -> Self {
         Self::new_with_config(BotConfig::default())
     }
@@ -104,6 +104,7 @@ impl<I> Bot<I> {
         let (event_tx, event_rx) = mpsc::channel(10);
         Self {
             config,
+            next_id: 0,
             instances: Arc::new(RwLock::new(HashMap::new())),
             event_tx,
             event_rx,
@@ -115,30 +116,24 @@ impl<I> Bot<I> {
         guard.retain(|_, v| !v.stopped());
     }
 
-    pub fn get_instances(&self) -> Vec<Instance<I>>
-    where
-        I: Clone,
-    {
+    pub fn get_instances(&self) -> Vec<Instance> {
         self.instances.read().unwrap().values().cloned().collect()
     }
 
-    pub fn add_instance(&self, id: I, config: InstanceConfig)
-    where
-        I: Clone + fmt::Debug + Send + 'static + Eq + hash::Hash,
-    {
+    pub fn add_instance(&mut self, config: InstanceConfig) -> Instance {
+        let id = self.next_id;
+        self.next_id += 1;
+
         let mut guard = self.instances.write().unwrap();
+        assert!(!guard.contains_key(&id));
 
-        if guard.contains_key(&id) {
-            return;
-        }
+        let instance = Instance::new(id, config, self.event_tx.clone());
+        guard.insert(id, instance.clone());
 
-        guard.insert(id.clone(), Instance::new(id, config, self.event_tx.clone()));
+        instance
     }
 
-    pub async fn recv(&mut self) -> Option<BotEvent<I>>
-    where
-        I: Clone + Eq + hash::Hash,
-    {
+    pub async fn recv(&mut self) -> Option<BotEvent> {
         // We hold exactly one sender. If no other senders exist, then all
         // instances are dead and we'll never receive any more events unless we
         // return and allow the user to add more instances again.
@@ -159,7 +154,7 @@ impl<I> Bot<I> {
             // own one sender, this can't happen.
             let event = event.expect("event channel should never close since we own a sender");
 
-            if let Some(instance) = self.instances.read().unwrap().get(event.id()) {
+            if let Some(instance) = self.instances.read().unwrap().get(&event.id()) {
                 return Some(BotEvent::from_instance_event(instance.clone(), event));
             }
         }
@@ -168,7 +163,7 @@ impl<I> Bot<I> {
     }
 }
 
-impl<I> Default for Bot<I> {
+impl Default for Bot {
     fn default() -> Self {
         Self::new()
     }
