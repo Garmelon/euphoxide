@@ -76,7 +76,7 @@ pub struct ClientConn {
     conn: Conn,
     state: State,
 
-    last_id: usize,
+    next_id: usize,
     replies: Replies<String, ParsedPacket>,
 }
 
@@ -135,9 +135,8 @@ impl ClientConn {
     /// A packet id is automatically generated and returned. When the server
     /// replies to the packet, it will use this id as its [`ParsedPacket::id`].
     pub async fn send(&mut self, data: impl Into<Data>) -> Result<String> {
-        // Overkill of universe-heat-death-like proportions
-        self.last_id = self.last_id.wrapping_add(1);
-        let id = self.last_id.to_string();
+        let id = self.next_id.to_string();
+        self.next_id += 1;
 
         self.conn
             .send(ParsedPacket::from_data(Some(id.clone()), data.into()))
@@ -252,7 +251,7 @@ impl ClientConn {
             tx,
             conn,
             state: State::new(),
-            last_id: 0,
+            next_id: 0,
             replies: Replies::new(config.command_timeout),
         };
 
