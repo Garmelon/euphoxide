@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
+    time::Duration,
 };
 
 use euphoxide::{
@@ -9,7 +10,7 @@ use euphoxide::{
 };
 use tokio::sync::mpsc;
 
-use crate::{BotConfig, Instance, InstanceConfig, InstanceEvent};
+use crate::{Instance, InstanceConfig, InstanceEvent};
 
 #[derive(Debug)]
 pub enum BotEvent {
@@ -83,6 +84,21 @@ impl BotEvent {
             Self::Packet { instance, .. } => instance,
             Self::Disconnected { instance } => instance,
             Self::Stopped { instance } => instance,
+        }
+    }
+}
+
+#[non_exhaustive]
+pub struct BotConfig {
+    pub event_timeout: Duration,
+    pub event_channel_bufsize: usize,
+}
+
+impl Default for BotConfig {
+    fn default() -> Self {
+        Self {
+            event_timeout: Duration::from_secs(1),
+            event_channel_bufsize: 10,
         }
     }
 }
