@@ -25,7 +25,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        _bot: &mut B,
+        _bot: &B,
     ) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             ctx.reply_only(msg.id, &self.0).await?;
@@ -54,7 +54,7 @@ where
         _args: Self::Args,
         msg: &Message,
         ctx: &Context,
-        _bot: &mut B,
+        _bot: &B,
     ) -> Result<Propagate, E> {
         ctx.reply_only(msg.id, &self.0).await?;
         Ok(Propagate::No)

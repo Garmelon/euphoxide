@@ -15,7 +15,7 @@ pub trait ClapCommand<B, E> {
         args: Self::Args,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E>;
 }
 
@@ -101,7 +101,7 @@ pub struct Clap<C>(pub C);
 #[async_trait]
 impl<B, E, C> Command<B, E> for Clap<C>
 where
-    B: Send,
+    B: Sync,
     E: From<euphoxide::Error>,
     C: ClapCommand<B, E> + Send + Sync,
     C::Args: Parser + Send,
@@ -118,7 +118,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,

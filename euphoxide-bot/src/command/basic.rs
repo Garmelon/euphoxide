@@ -51,7 +51,7 @@ impl<C> Described<C> {
 #[async_trait]
 impl<B, E, C> Command<B, E> for Described<C>
 where
-    B: Send,
+    B: Sync,
     C: Command<B, E> + Send + Sync,
 {
     fn info(&self, ctx: &Context) -> Info {
@@ -67,7 +67,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         self.inner.execute(arg, msg, ctx, bot).await
     }
@@ -90,7 +90,7 @@ impl<C> Prefixed<C> {
 #[async_trait]
 impl<B, E, C> Command<B, E> for Prefixed<C>
 where
-    B: Send,
+    B: Sync,
     C: Command<B, E> + Send + Sync,
 {
     fn info(&self, ctx: &Context) -> Info {
@@ -102,7 +102,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         if let Some(rest) = arg.trim_start().strip_prefix(&self.prefix) {
             self.inner.execute(rest, msg, ctx, bot).await

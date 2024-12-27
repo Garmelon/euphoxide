@@ -118,7 +118,7 @@ pub trait Command<B, E> {
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E>;
 }
 
@@ -149,7 +149,7 @@ impl<B, E> Commands<B, E> {
         conn: ClientConnHandle,
         state: State,
         packet: ParsedPacket,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         let Ok(Data::SendEvent(SendEvent(msg))) = &packet.content else {
             return Ok(Propagate::Yes);
@@ -174,7 +174,7 @@ impl<B, E> Commands<B, E> {
     pub async fn on_instance_event(
         &self,
         event: InstanceEvent,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         if let InstanceEvent::Packet {
             conn,
@@ -189,7 +189,7 @@ impl<B, E> Commands<B, E> {
         }
     }
 
-    pub async fn on_bot_event(&self, event: BotEvent, bot: &mut B) -> Result<Propagate, E> {
+    pub async fn on_bot_event(&self, event: BotEvent, bot: &B) -> Result<Propagate, E> {
         if let BotEvent::Packet {
             conn,
             state,

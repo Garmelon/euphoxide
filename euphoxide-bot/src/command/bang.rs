@@ -47,7 +47,7 @@ impl<C> Global<C> {
 #[async_trait]
 impl<B, E, C> Command<B, E> for Global<C>
 where
-    B: Send,
+    B: Sync,
     C: Command<B, E> + Send + Sync,
 {
     fn info(&self, ctx: &Context) -> Info {
@@ -61,7 +61,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
@@ -99,7 +99,7 @@ impl<C> General<C> {
 #[async_trait]
 impl<B, E, C> Command<B, E> for General<C>
 where
-    B: Send,
+    B: Sync,
     C: Command<B, E> + Send + Sync,
 {
     fn info(&self, ctx: &Context) -> Info {
@@ -113,7 +113,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
@@ -158,7 +158,7 @@ impl<C> Specific<C> {
 #[async_trait]
 impl<B, E, C> Command<B, E> for Specific<C>
 where
-    B: Send,
+    B: Sync,
     C: Command<B, E> + Send + Sync,
 {
     fn info(&self, ctx: &Context) -> Info {
@@ -173,7 +173,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);

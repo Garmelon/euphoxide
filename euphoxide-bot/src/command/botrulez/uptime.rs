@@ -85,7 +85,7 @@ impl Uptime {
 #[async_trait]
 impl<B, E> Command<B, E> for Uptime
 where
-    B: HasStartTime + Send,
+    B: HasStartTime + Sync,
     E: From<euphoxide::Error>,
 {
     async fn execute(
@@ -93,7 +93,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             let reply = self.formulate_reply(ctx, bot, false);
@@ -118,7 +118,7 @@ pub struct UptimeArgs {
 #[async_trait]
 impl<B, E> ClapCommand<B, E> for Uptime
 where
-    B: HasStartTime + Send,
+    B: HasStartTime + Sync,
     E: From<euphoxide::Error>,
 {
     type Args = UptimeArgs;
@@ -128,7 +128,7 @@ where
         args: Self::Args,
         msg: &Message,
         ctx: &Context,
-        bot: &mut B,
+        bot: &B,
     ) -> Result<Propagate, E> {
         let reply = self.formulate_reply(ctx, bot, args.connected);
         ctx.reply_only(msg.id, reply).await?;
