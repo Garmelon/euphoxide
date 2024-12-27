@@ -1,64 +1,76 @@
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use jiff::Timestamp;
+use log::error;
 use tokio::sync::mpsc;
 
 use crate::{
+    command::Commands,
     instance::ServerConfig,
     instances::{Event, Instances, InstancesConfig},
 };
 
-#[derive(Debug, Clone)]
 #[non_exhaustive]
-pub struct BotConfig<S> {
-    pub server: ServerConfig,
-    pub instances: InstancesConfig,
-    pub state: S,
-}
-
-impl<S> BotConfig<S> {
-    pub fn with_state<S2>(self, state: S2) -> BotConfig<S2> {
-        BotConfig {
-            server: self.server,
-            instances: self.instances,
-            state,
-        }
-    }
-
-    pub fn create(self, event_tx: mpsc::Sender<Event>) -> Bot<S> {
-        Bot::new(self, event_tx)
-    }
-}
-
-impl Default for BotConfig<()> {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            instances: InstancesConfig::default(),
-            state: (),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Bot<S> {
+pub struct Bot<S = (), E = euphoxide::Error> {
     pub server_config: ServerConfig,
+    pub commands: Arc<Commands<S, E>>,
     pub state: Arc<S>,
     pub instances: Instances,
     pub start_time: Timestamp,
 }
 
-impl<S> Bot<S> {
-    pub fn new(config: BotConfig<S>, event_tx: mpsc::Sender<Event>) -> Self {
+impl Bot {
+    pub fn new_simple(commands: Commands, event_tx: mpsc::Sender<Event>) -> Self {
+        Self::new(
+            ServerConfig::default(),
+            InstancesConfig::default(),
+            commands,
+            (),
+            event_tx,
+        )
+    }
+}
+
+impl<S, E> Bot<S, E> {
+    pub fn new(
+        server_config: ServerConfig,
+        instances_config: InstancesConfig,
+        commands: Commands<S, E>,
+        state: S,
+        event_tx: mpsc::Sender<Event>,
+    ) -> Self {
         Self {
-            server_config: config.server,
-            state: Arc::new(config.state),
-            instances: Instances::new(config.instances, event_tx),
+            server_config,
+            commands: Arc::new(commands),
+            state: Arc::new(state),
+            instances: Instances::new(instances_config, event_tx),
             start_time: Timestamp::now(),
         }
     }
-
+}
+impl<S, E> Bot<S, E>
+where
+    S: Send + Sync + 'static,
+    E: Debug + 'static,
+{
     pub fn handle_event(&self, event: Event) {
-        todo!()
+        let bot = self.clone();
+        tokio::task::spawn(async move {
+            if let Err(err) = bot.commands.on_event(event, &bot).await {
+                error!("while handling event: {err:#?}");
+            }
+        });
+    }
+}
+
+impl<S, E> Clone for Bot<S, E> {
+    fn clone(&self) -> Self {
+        Self {
+            server_config: self.server_config.clone(),
+            commands: self.commands.clone(),
+            state: self.state.clone(),
+            instances: self.instances.clone(),
+            start_time: self.start_time,
+        }
     }
 }
