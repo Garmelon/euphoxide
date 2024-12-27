@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-    time::Duration,
-};
+use std::{collections::HashMap, time::Duration};
 
 use euphoxide::{
     api::ParsedPacket,
@@ -106,7 +102,7 @@ impl Default for BotConfig {
 pub struct Bot {
     config: BotConfig,
     next_id: usize,
-    instances: Arc<RwLock<HashMap<usize, Instance>>>,
+    instances: HashMap<usize, Instance>,
     event_tx: mpsc::Sender<InstanceEvent>,
     event_rx: mpsc::Receiver<InstanceEvent>,
 }
@@ -121,30 +117,28 @@ impl Bot {
         Self {
             config,
             next_id: 0,
-            instances: Arc::new(RwLock::new(HashMap::new())),
+            instances: HashMap::new(),
             event_tx,
             event_rx,
         }
     }
 
-    fn purge_instances(&self) {
-        let mut guard = self.instances.write().unwrap();
-        guard.retain(|_, v| !v.stopped());
+    fn purge_instances(&mut self) {
+        self.instances.retain(|_, v| !v.stopped());
     }
 
     pub fn get_instances(&self) -> Vec<Instance> {
-        self.instances.read().unwrap().values().cloned().collect()
+        self.instances.values().cloned().collect()
     }
 
     pub fn add_instance(&mut self, config: InstanceConfig) -> Instance {
         let id = self.next_id;
         self.next_id += 1;
 
-        let mut guard = self.instances.write().unwrap();
-        assert!(!guard.contains_key(&id));
+        assert!(!self.instances.contains_key(&id));
 
         let instance = Instance::new(id, config, self.event_tx.clone());
-        guard.insert(id, instance.clone());
+        self.instances.insert(id, instance.clone());
 
         instance
     }
@@ -170,7 +164,7 @@ impl Bot {
             // own one sender, this can't happen.
             let event = event.expect("event channel should never close since we own a sender");
 
-            if let Some(instance) = self.instances.read().unwrap().get(&event.id()) {
+            if let Some(instance) = self.instances.get(&event.id()) {
                 return Some(BotEvent::from_instance_event(instance.clone(), event));
             }
         }
