@@ -8,7 +8,7 @@ clap = ["dep:clap"]
 
 [dependencies]
 async-trait = { workspace = true }
-clap = { workspace = true, optional = true }
+clap = { workspace = true, optional = true, features = ["derive"] }
 cookie = { workspace = true }
 euphoxide = { path = "../euphoxide" }
 jiff = { workspace = true }

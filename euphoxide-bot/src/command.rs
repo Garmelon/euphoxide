@@ -1,5 +1,6 @@
 pub mod bang;
 pub mod basic;
+pub mod botrulez;
 #[cfg(feature = "clap")]
 pub mod clap;
 
