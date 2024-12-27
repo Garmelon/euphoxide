@@ -1,3 +1,5 @@
+//! Euphoria-style `!foo` and `!foo @bar` command wrappers.
+
 use async_trait::async_trait;
 use euphoxide::{api::Message, nick};
 

@@ -1,8 +1,7 @@
 pub mod bang;
+pub mod basic;
 #[cfg(feature = "clap")]
 pub mod clap;
-mod hidden;
-mod prefixed;
 
 use std::future::Future;
 
@@ -14,8 +13,6 @@ use euphoxide::{
         state::{Joined, State},
     },
 };
-
-pub use self::{hidden::*, prefixed::*};
 
 #[non_exhaustive]
 pub struct Context {
