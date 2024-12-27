@@ -8,12 +8,14 @@ use std::future::Future;
 
 use async_trait::async_trait;
 use euphoxide::{
-    api::{Data, Message, MessageId, ParsedPacket, Send, SendEvent, SendReply},
+    api::{self, Data, Message, MessageId, ParsedPacket, SendEvent, SendReply},
     client::{
         conn::ClientConnHandle,
         state::{Joined, State},
     },
 };
+
+use crate::{bot::BotEvent, instance::InstanceEvent};
 
 #[non_exhaustive]
 pub struct Context {
@@ -27,7 +29,7 @@ impl Context {
         content: S,
     ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>>> {
         self.conn
-            .send(Send {
+            .send(api::Send {
                 content: content.to_string(),
                 parent: None,
             })
@@ -45,7 +47,7 @@ impl Context {
         content: S,
     ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>>> {
         self.conn
-            .send(Send {
+            .send(api::Send {
                 content: content.to_string(),
                 parent: Some(parent),
             })
@@ -121,7 +123,7 @@ pub trait Command<B, E> {
 }
 
 pub struct Commands<B, E = euphoxide::Error> {
-    commands: Vec<Box<dyn Command<B, E>>>,
+    commands: Vec<Box<dyn Command<B, E> + Sync + Send>>,
 }
 
 impl<B, E> Commands<B, E> {
@@ -129,11 +131,11 @@ impl<B, E> Commands<B, E> {
         Self { commands: vec![] }
     }
 
-    pub fn add(&mut self, command: impl Command<B, E> + 'static) {
+    pub fn add(&mut self, command: impl Command<B, E> + Sync + Send + 'static) {
         self.commands.push(Box::new(command));
     }
 
-    pub fn then(mut self, command: impl Command<B, E> + 'static) -> Self {
+    pub fn then(mut self, command: impl Command<B, E> + Sync + Send + 'static) -> Self {
         self.add(command);
         self
     }
@@ -142,7 +144,7 @@ impl<B, E> Commands<B, E> {
         self.commands.iter().map(|c| c.info(ctx)).collect()
     }
 
-    pub async fn execute(
+    pub async fn on_packet(
         &self,
         conn: ClientConnHandle,
         state: State,
@@ -167,6 +169,38 @@ impl<B, E> Commands<B, E> {
         }
 
         Ok(Propagate::Yes)
+    }
+
+    pub async fn on_instance_event(
+        &self,
+        event: InstanceEvent,
+        bot: &mut B,
+    ) -> Result<Propagate, E> {
+        if let InstanceEvent::Packet {
+            conn,
+            state,
+            packet,
+            ..
+        } = event
+        {
+            self.on_packet(conn, state, packet, bot).await
+        } else {
+            Ok(Propagate::Yes)
+        }
+    }
+
+    pub async fn on_bot_event(&self, event: BotEvent, bot: &mut B) -> Result<Propagate, E> {
+        if let BotEvent::Packet {
+            conn,
+            state,
+            packet,
+            ..
+        } = event
+        {
+            self.on_packet(conn, state, packet, bot).await
+        } else {
+            Ok(Propagate::Yes)
+        }
     }
 }
 
