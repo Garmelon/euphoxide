@@ -1,5 +1,7 @@
 pub mod bang;
 pub mod basic;
+#[cfg(feature = "clap")]
+pub mod clap;
 
 use std::future::Future;
 

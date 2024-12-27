@@ -3,8 +3,12 @@ name = "euphoxide-bot"
 version = { workspace = true }
 edition = { workspace = true }
 
+[features]
+clap = ["dep:clap"]
+
 [dependencies]
 async-trait = { workspace = true }
+clap = { workspace = true, optional = true }
 cookie = { workspace = true }
 euphoxide = { path = "../euphoxide" }
 jiff = { workspace = true }
