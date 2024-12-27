@@ -10,7 +10,7 @@ use euphoxide::{
 };
 use tokio::sync::mpsc;
 
-use crate::{Instance, InstanceConfig, InstanceEvent};
+use crate::instance::{Instance, InstanceConfig, InstanceEvent};
 
 #[derive(Debug)]
 pub enum BotEvent {

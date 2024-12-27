@@ -4,7 +4,10 @@ use euphoxide::{
     api::{Data, Message, Nick, Send},
     client::conn::ClientConnHandle,
 };
-use euphoxide_bot::{Bot, BotEvent, ServerConfig};
+use euphoxide_bot::{
+    bot::{Bot, BotEvent},
+    instance::ServerConfig,
+};
 
 async fn set_nick(conn: &ClientConnHandle) -> anyhow::Result<()> {
     conn.send_only(Nick {

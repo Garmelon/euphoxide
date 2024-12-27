@@ -1,4 +1,2 @@
-mod bot;
-mod instance;
-
-pub use crate::{bot::*, instance::*};
+pub mod bot;
+pub mod instance;

@@ -4,7 +4,7 @@ use euphoxide::{
     api::{Data, Message, Nick, Send},
     client::conn::ClientConnHandle,
 };
-use euphoxide_bot::{Instance, InstanceEvent, ServerConfig};
+use euphoxide_bot::instance::{Instance, InstanceEvent, ServerConfig};
 use tokio::sync::mpsc;
 
 async fn set_nick(conn: &ClientConnHandle) -> anyhow::Result<()> {
