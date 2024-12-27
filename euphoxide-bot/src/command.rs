@@ -7,6 +7,8 @@ pub mod clap;
 use std::future::Future;
 
 use async_trait::async_trait;
+use bang::{General, Global, Specific};
+use basic::{Described, Prefixed};
 use euphoxide::{
     api::{self, Data, Message, MessageId, ParsedPacket, SendEvent, SendReply},
     client::{
@@ -108,7 +110,7 @@ pub enum Propagate {
 
 #[allow(unused_variables)]
 #[async_trait]
-pub trait Command<B, E> {
+pub trait Command<B, E = euphoxide::Error> {
     fn info(&self, ctx: &Context) -> Info {
         Info::default()
     }
@@ -121,6 +123,34 @@ pub trait Command<B, E> {
         bot: &B,
     ) -> Result<Propagate, E>;
 }
+
+pub trait CommandExt<B, E>: Sized {
+    fn described(self) -> Described<Self> {
+        Described::new(self)
+    }
+
+    fn hidden(self) -> Described<Self> {
+        Described::hidden(self)
+    }
+
+    fn prefixed(self, prefix: impl ToString) -> Prefixed<Self> {
+        Prefixed::new(prefix, self)
+    }
+
+    fn general(self, name: impl ToString) -> General<Self> {
+        General::new(name, self)
+    }
+
+    fn global(self, name: impl ToString) -> Global<Self> {
+        Global::new(name, self)
+    }
+
+    fn specific(self, name: impl ToString) -> Specific<Self> {
+        Specific::new(name, self)
+    }
+}
+
+impl<B, E, C: Command<B, E>> CommandExt<B, E> for C {}
 
 pub struct Commands<B, E = euphoxide::Error> {
     commands: Vec<Box<dyn Command<B, E> + Sync + Send>>,
@@ -171,11 +201,7 @@ impl<B, E> Commands<B, E> {
         Ok(Propagate::Yes)
     }
 
-    pub async fn on_instance_event(
-        &self,
-        event: InstanceEvent,
-        bot: &B,
-    ) -> Result<Propagate, E> {
+    pub async fn on_instance_event(&self, event: InstanceEvent, bot: &B) -> Result<Propagate, E> {
         if let InstanceEvent::Packet {
             conn,
             state,

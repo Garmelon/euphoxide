@@ -1,79 +1,82 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
+use async_trait::async_trait;
 use euphoxide::{
-    api::{Data, Message, Nick, Send},
-    client::conn::ClientConnHandle,
+    api::{Data, Message, Nick, ParsedPacket, Send},
+    client::{conn::ClientConnHandle, state::State},
 };
 use euphoxide_bot::{
-    bot::{Bot, BotEvent},
+    bot::Bot,
+    command::{
+        botrulez::{FullHelp, HasCommandInfos, HasStartTime, Ping, ShortHelp, Uptime},
+        Command, CommandExt, Commands, Context, Info, Propagate,
+    },
     instance::ServerConfig,
 };
+use jiff::Timestamp;
 
-async fn set_nick(conn: &ClientConnHandle) -> anyhow::Result<()> {
-    conn.send_only(Nick {
-        name: "examplebot".to_string(),
-    })
-    .await?;
+struct Pyramid;
 
-    Ok(())
-}
-
-async fn send_pong(conn: &ClientConnHandle, msg: Message) -> anyhow::Result<()> {
-    conn.send_only(Send {
-        content: "Pong!".to_string(),
-        parent: Some(msg.id),
-    })
-    .await?;
-
-    Ok(())
-}
-
-async fn send_pyramid(conn: &ClientConnHandle, msg: Message) -> anyhow::Result<()> {
-    let mut parent = msg.id;
-
-    for _ in 0..3 {
-        let first = conn
-            .send(Send {
-                content: "brick".to_string(),
-                parent: Some(parent),
-            })
-            .await?;
-
-        conn.send_only(Send {
-            content: "brick".to_string(),
-            parent: Some(parent),
-        })
-        .await?;
-
-        parent = first.await?.0.id;
-        tokio::time::sleep(Duration::from_secs(1)).await;
+#[async_trait]
+impl Command<BotState> for Pyramid {
+    fn info(&self, _ctx: &Context) -> Info {
+        Info::new().with_description("build a pyramid")
     }
 
-    conn.send_only(Send {
-        content: "brick".to_string(),
-        parent: Some(parent),
-    })
-    .await?;
+    async fn execute(
+        &self,
+        _arg: &str,
+        msg: &Message,
+        ctx: &Context,
+        _bot: &BotState,
+    ) -> euphoxide::Result<Propagate> {
+        let mut parent = msg.id;
 
-    Ok(())
+        for _ in 0..3 {
+            let first = ctx.reply(parent, "brick").await?;
+            ctx.reply_only(parent, "brick").await?;
+            parent = first.await?.0.id;
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+
+        ctx.reply_only(parent, "brick").await?;
+        Ok(Propagate::No)
+    }
 }
 
-async fn on_data(conn: ClientConnHandle, data: Data) {
-    let result = match data {
-        Data::SnapshotEvent(_) => set_nick(&conn).await,
-        Data::SendEvent(event) if event.0.content == "!ping" => send_pong(&conn, event.0).await,
-        Data::SendEvent(event) if event.0.content == "!pyramid" => {
-            send_pyramid(&conn, event.0).await
-        }
-        _ => Ok(()),
-    };
+#[derive(Clone)]
+struct BotState {
+    start_time: Timestamp,
+    commands: Arc<Commands<Self>>,
+}
 
-    if let Err(err) = result {
-        println!("Error while responding: {err}");
+impl HasStartTime for BotState {
+    fn start_time(&self) -> Timestamp {
+        self.start_time
+    }
+}
+
+impl HasCommandInfos for BotState {
+    fn command_infos(&self, ctx: &Context) -> Vec<Info> {
+        self.commands.infos(ctx)
     }
 }
 
 async fn run() -> anyhow::Result<()> {
+    let commands = Commands::new()
+        .then(Ping::default())
+        .then(Uptime)
+        .then(ShortHelp::new("/me demonstrates how to use euphoxide"))
+        .then(FullHelp::new())
+        .then(Pyramid.global("pyramid"));
+
+    let commands = Arc::new(commands);
+
+    let state = BotState {
+        start_time: Timestamp::now(),
+        commands: commands.clone(),
+    };
+
     let mut bot = Bot::new();
 
     let config = ServerConfig::default()
@@ -83,10 +86,7 @@ async fn run() -> anyhow::Result<()> {
     bot.add_instance(config);
 
     while let Some(event) = bot.recv().await {
-        if let BotEvent::Packet { conn, packet, .. } = event {
-            let data = packet.into_data()?;
-            tokio::task::spawn(on_data(conn, data));
-        }
+        commands.on_bot_event(event, &state).await?;
     }
 
     Ok(())
