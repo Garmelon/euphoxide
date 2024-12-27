@@ -7,6 +7,7 @@ version = "0.5.1"
 edition = "2021"
 
 [workspace.dependencies]
+async-trait = "0.1.83"
 caseless = "0.2.1"
 cookie = "0.18.1"
 futures-util = "0.3.31"
