@@ -1,4 +1,6 @@
-mod bang;
+pub mod bang;
+#[cfg(feature = "clap")]
+pub mod clap;
 mod hidden;
 mod prefixed;
 
@@ -13,7 +15,7 @@ use euphoxide::{
     },
 };
 
-pub use self::{bang::*, hidden::*, prefixed::*};
+pub use self::{hidden::*, prefixed::*};
 
 #[non_exhaustive]
 pub struct Context {
