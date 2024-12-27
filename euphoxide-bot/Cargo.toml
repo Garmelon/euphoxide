@@ -11,6 +11,7 @@ async-trait = { workspace = true }
 clap = { workspace = true, optional = true }
 cookie = { workspace = true }
 euphoxide = { path = "../euphoxide" }
+jiff = { workspace = true }
 log = { workspace = true }
 tokio = { workspace = true, features = ["rt"] }
 tokio-tungstenite = { workspace = true }
