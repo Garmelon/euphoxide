@@ -134,6 +134,7 @@ impl InstancesTask {
     async fn on_cmd(&mut self, cmd: Command) {
         match cmd {
             Command::GetInstances(tx) => {
+                self.purge_instances(); // Not necessary for correctness
                 let _ = tx.send(self.instances.values().cloned().collect());
             }
             Command::AddInstance(config, tx) => {
