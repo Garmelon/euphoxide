@@ -1,3 +1,7 @@
+mod bang;
+mod hidden;
+mod prefixed;
+
 use std::future::Future;
 
 use async_trait::async_trait;
@@ -8,6 +12,8 @@ use euphoxide::{
         state::{Joined, State},
     },
 };
+
+pub use self::{bang::*, hidden::*, prefixed::*};
 
 #[non_exhaustive]
 pub struct Context {
