@@ -4,8 +4,6 @@ use async_trait::async_trait;
 use clap::{CommandFactory, Parser};
 use euphoxide::api::Message;
 
-use crate::bot::Bot;
-
 use super::{Command, Context, Info, Propagate};
 
 #[async_trait]
@@ -16,8 +14,7 @@ pub trait ClapCommand<E> {
         &self,
         args: Self::Args,
         msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
+        ctx: &Context<E>,
     ) -> Result<Propagate, E>;
 }
 
@@ -107,20 +104,14 @@ where
     C: ClapCommand<E> + Sync,
     C::Args: Parser + Send,
 {
-    fn info(&self, _ctx: &Context) -> Info {
+    fn info(&self, _ctx: &Context<E>) -> Info {
         Info {
             description: C::Args::command().get_about().map(|s| s.to_string()),
             ..Info::default()
         }
     }
 
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,
             Err(err) => {
@@ -141,7 +132,7 @@ where
             }
         };
 
-        self.0.execute(args, msg, ctx, bot).await
+        self.0.execute(args, msg, ctx).await
     }
 }
 
