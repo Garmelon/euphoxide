@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["euphoxide", "euphoxide-bot"]
+members = ["euphoxide", "euphoxide-bot", "euphoxide-client"]
 
 [workspace.package]
 version = "0.5.1"
@@ -22,6 +22,10 @@ unicode-normalization = "0.1.24"
 # For examples
 anyhow = "1.0.94"
 rustls = "0.23.19"
+# In this workspace
+euphoxide = { path = "./euphoxide" }
+euphoxide-bot = { path = "./euphoxide-bot" }
+euphoxide-client = { path = "./euphoxide-client" }
 
 [workspace.lints]
 rust.unsafe_code = { level = "forbid", priority = 1 }
