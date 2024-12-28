@@ -62,8 +62,14 @@ pub trait HasStartTime {
 }
 
 impl Uptime {
-    fn formulate_reply<E>(&self, ctx: &Context, bot: &Bot<E>, connected: bool) -> String {
-        let start = bot.start_time;
+    fn formulate_reply<E>(
+        &self,
+        ctx: &Context,
+        bot: &Bot<E>,
+        joined: bool,
+        connected: bool,
+    ) -> String {
+        let start = bot.clients.start_time();
         let now = Timestamp::now();
 
         let mut reply = format!(
@@ -71,6 +77,15 @@ impl Uptime {
             format_time(start),
             format_relative_time(start - now),
         );
+
+        if joined {
+            let since = ctx.client.start_time();
+            reply.push_str(&format!(
+                ", present since {} ({})",
+                format_time(since),
+                format_relative_time(since - now),
+            ));
+        }
 
         if connected {
             let since = ctx.joined.since;
@@ -98,7 +113,7 @@ where
         bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
-            let reply = self.formulate_reply(ctx, bot, false);
+            let reply = self.formulate_reply(ctx, bot, false, false);
             ctx.reply_only(msg.id, reply).await?;
             Ok(Propagate::No)
         } else {
@@ -111,6 +126,9 @@ where
 #[cfg(feature = "clap")]
 #[derive(Parser)]
 pub struct UptimeArgs {
+    /// Show how long the bot has been in this room.
+    #[arg(long, short)]
+    pub present: bool,
     /// Show how long the bot has been connected without interruption.
     #[arg(long, short)]
     pub connected: bool,
@@ -131,7 +149,7 @@ where
         ctx: &Context,
         bot: &Bot<E>,
     ) -> Result<Propagate, E> {
-        let reply = self.formulate_reply(ctx, bot, args.connected);
+        let reply = self.formulate_reply(ctx, bot, args.present, args.connected);
         ctx.reply_only(msg.id, reply).await?;
         Ok(Propagate::No)
     }

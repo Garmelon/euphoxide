@@ -6,6 +6,7 @@ edition = { workspace = true }
 [dependencies]
 cookie = { workspace = true }
 euphoxide = { workspace = true }
+jiff = { workspace = true }
 log = { workspace = true }
 tokio = { workspace = true, features = ["rt"] }
 tokio-tungstenite = { workspace = true }

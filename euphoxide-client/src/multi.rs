@@ -4,6 +4,7 @@ use euphoxide::{
     api::ParsedPacket,
     client::{conn::ClientConnHandle, state::State},
 };
+use jiff::Timestamp;
 use tokio::{
     select,
     sync::{mpsc, oneshot},
@@ -160,6 +161,7 @@ impl MultiClientTask {
 pub struct MultiClient {
     config: Arc<MultiClientConfig>,
     cmd_tx: mpsc::Sender<Command>,
+    start_time: Timestamp,
 }
 
 impl MultiClient {
@@ -171,6 +173,8 @@ impl MultiClient {
         config: MultiClientConfig,
         event_tx: mpsc::Sender<MultiClientEvent>,
     ) -> Self {
+        let start_time = Timestamp::now();
+
         let config = Arc::new(config);
         let out_tx = event_tx;
 
@@ -188,7 +192,15 @@ impl MultiClient {
 
         tokio::task::spawn(task.run());
 
-        Self { config, cmd_tx }
+        Self {
+            config,
+            cmd_tx,
+            start_time,
+        }
+    }
+
+    pub fn start_time(&self) -> Timestamp {
+        self.start_time
     }
 
     pub async fn get_clients(&self) -> Vec<Client> {
