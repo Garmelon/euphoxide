@@ -3,8 +3,6 @@
 use async_trait::async_trait;
 use euphoxide::api::Message;
 
-use crate::bot::Bot;
-
 use super::{Command, Context, Info, Propagate};
 
 /// Rewrite or hide command info.
@@ -55,7 +53,7 @@ impl<E, C> Command<E> for Described<C>
 where
     C: Command<E> + Sync,
 {
-    fn info(&self, ctx: &Context) -> Info {
+    fn info(&self, ctx: &Context<E>) -> Info {
         let info = self.inner.info(ctx);
         Info {
             trigger: self.trigger.clone().unwrap_or(info.trigger),
@@ -63,14 +61,8 @@ where
         }
     }
 
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
-        self.inner.execute(arg, msg, ctx, bot).await
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+        self.inner.execute(arg, msg, ctx).await
     }
 }
 
@@ -93,19 +85,13 @@ impl<E, C> Command<E> for Prefixed<C>
 where
     C: Command<E> + Sync,
 {
-    fn info(&self, ctx: &Context) -> Info {
+    fn info(&self, ctx: &Context<E>) -> Info {
         self.inner.info(ctx).with_prepended_trigger(&self.prefix)
     }
 
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
         if let Some(rest) = arg.trim_start().strip_prefix(&self.prefix) {
-            self.inner.execute(rest, msg, ctx, bot).await
+            self.inner.execute(rest, msg, ctx).await
         } else {
             Ok(Propagate::Yes)
         }

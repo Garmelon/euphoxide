@@ -5,10 +5,7 @@ use euphoxide::api::Message;
 
 #[cfg(feature = "clap")]
 use crate::command::clap::ClapCommand;
-use crate::{
-    bot::Bot,
-    command::{Command, Context, Propagate},
-};
+use crate::command::{Command, Context, Propagate};
 
 pub struct ShortHelp(pub String);
 
@@ -23,13 +20,7 @@ impl<E> Command<E> for ShortHelp
 where
     E: From<euphoxide::Error>,
 {
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        _bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             ctx.reply_only(msg.id, &self.0).await?;
             Ok(Propagate::No)
@@ -56,8 +47,7 @@ where
         &self,
         _args: Self::Args,
         msg: &Message,
-        ctx: &Context,
-        _bot: &Bot<E>,
+        ctx: &Context<E>,
     ) -> Result<Propagate, E> {
         ctx.reply_only(msg.id, &self.0).await?;
         Ok(Propagate::No)

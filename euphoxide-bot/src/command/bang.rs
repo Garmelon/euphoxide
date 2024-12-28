@@ -3,8 +3,6 @@
 use async_trait::async_trait;
 use euphoxide::{api::Message, nick};
 
-use crate::bot::Bot;
-
 use super::{Command, Context, Info, Propagate};
 
 // TODO Don't ignore leading whitespace?
@@ -51,19 +49,13 @@ impl<E, C> Command<E> for Global<C>
 where
     C: Command<E> + Sync,
 {
-    fn info(&self, ctx: &Context) -> Info {
+    fn info(&self, ctx: &Context<E>) -> Info {
         self.inner
             .info(ctx)
             .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
     }
 
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -72,7 +64,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, msg, ctx, bot).await
+        self.inner.execute(rest, msg, ctx).await
     }
 }
 
@@ -102,19 +94,13 @@ impl<E, C> Command<E> for General<C>
 where
     C: Command<E> + Sync,
 {
-    fn info(&self, ctx: &Context) -> Info {
+    fn info(&self, ctx: &Context<E>) -> Info {
         self.inner
             .info(ctx)
             .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
     }
 
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -130,7 +116,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, msg, ctx, bot).await
+        self.inner.execute(rest, msg, ctx).await
     }
 }
 
@@ -160,20 +146,14 @@ impl<E, C> Command<E> for Specific<C>
 where
     C: Command<E> + Sync,
 {
-    fn info(&self, ctx: &Context) -> Info {
+    fn info(&self, ctx: &Context<E>) -> Info {
         let nick = nick::mention(&ctx.joined.session.name);
         self.inner
             .info(ctx)
             .with_prepended_trigger(format!("{}{} @{nick}", self.prefix, self.name))
     }
 
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -190,7 +170,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, msg, ctx, bot).await
+        self.inner.execute(rest, msg, ctx).await
     }
 }
 
