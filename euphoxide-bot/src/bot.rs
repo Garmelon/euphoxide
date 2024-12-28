@@ -1,7 +1,6 @@
 use std::{fmt::Debug, sync::Arc};
 
 use euphoxide_client::{MultiClient, MultiClientConfig, MultiClientEvent, ServerConfig};
-use jiff::Timestamp;
 use log::error;
 use tokio::sync::mpsc;
 
@@ -12,7 +11,6 @@ pub struct Bot<E = euphoxide::Error> {
     pub server_config: ServerConfig,
     pub commands: Arc<Commands<E>>,
     pub clients: MultiClient,
-    pub start_time: Timestamp,
 }
 
 impl Bot {
@@ -37,10 +35,10 @@ impl<E> Bot<E> {
             server_config,
             commands: Arc::new(commands),
             clients: MultiClient::new_with_config(clients_config, event_tx),
-            start_time: Timestamp::now(),
         }
     }
 }
+
 impl<E> Bot<E>
 where
     E: Debug + 'static,
@@ -61,7 +59,6 @@ impl<E> Clone for Bot<E> {
             server_config: self.server_config.clone(),
             commands: self.commands.clone(),
             clients: self.clients.clone(),
-            start_time: self.start_time,
         }
     }
 }

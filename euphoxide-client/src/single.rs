@@ -8,6 +8,7 @@ use euphoxide::{
         state::State,
     },
 };
+use jiff::Timestamp;
 use log::warn;
 use tokio::{
     select,
@@ -337,6 +338,7 @@ impl ClientTask {
 pub struct Client {
     id: usize,
     cmd_tx: mpsc::Sender<Command>,
+    start_time: Timestamp,
 }
 
 impl fmt::Debug for Client {
@@ -349,6 +351,8 @@ impl fmt::Debug for Client {
 
 impl Client {
     pub fn new(id: usize, config: ClientConfig, event_tx: mpsc::Sender<ClientEvent>) -> Self {
+        let start_time = Timestamp::now();
+
         let (cmd_tx, cmd_rx) = mpsc::channel(config.server.cmd_channel_bufsize);
 
         let task = ClientTask {
@@ -362,11 +366,19 @@ impl Client {
 
         tokio::task::spawn(task.run());
 
-        Self { id, cmd_tx }
+        Self {
+            id,
+            cmd_tx,
+            start_time,
+        }
     }
 
     pub fn id(&self) -> usize {
         self.id
+    }
+
+    pub fn start_time(&self) -> Timestamp {
+        self.start_time
     }
 
     pub fn stopped(&self) -> bool {
