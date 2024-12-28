@@ -6,10 +6,7 @@ use jiff::{Span, Timestamp, Unit};
 
 #[cfg(feature = "clap")]
 use crate::command::clap::ClapCommand;
-use crate::{
-    bot::Bot,
-    command::{Command, Context, Propagate},
-};
+use crate::command::{Command, Context, Propagate};
 
 pub fn format_time(t: Timestamp) -> String {
     t.strftime("%Y-%m-%d %H:%M:%S UTC").to_string()
@@ -62,14 +59,8 @@ pub trait HasStartTime {
 }
 
 impl Uptime {
-    fn formulate_reply<E>(
-        &self,
-        ctx: &Context,
-        bot: &Bot<E>,
-        joined: bool,
-        connected: bool,
-    ) -> String {
-        let start = bot.clients.start_time();
+    fn formulate_reply<E>(&self, ctx: &Context<E>, joined: bool, connected: bool) -> String {
+        let start = ctx.clients.start_time();
         let now = Timestamp::now();
 
         let mut reply = format!(
@@ -105,15 +96,9 @@ impl<E> Command<E> for Uptime
 where
     E: From<euphoxide::Error>,
 {
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
-            let reply = self.formulate_reply(ctx, bot, false, false);
+            let reply = self.formulate_reply(ctx, false, false);
             ctx.reply_only(msg.id, reply).await?;
             Ok(Propagate::No)
         } else {
@@ -146,10 +131,9 @@ where
         &self,
         args: Self::Args,
         msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
+        ctx: &Context<E>,
     ) -> Result<Propagate, E> {
-        let reply = self.formulate_reply(ctx, bot, args.present, args.connected);
+        let reply = self.formulate_reply(ctx, args.present, args.connected);
         ctx.reply_only(msg.id, reply).await?;
         Ok(Propagate::No)
     }

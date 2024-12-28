@@ -1,2 +1,3 @@
-pub mod bot;
-pub mod command;
+mod command;
+
+pub use self::command::*;

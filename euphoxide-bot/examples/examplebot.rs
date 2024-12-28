@@ -3,14 +3,13 @@ use std::time::Duration;
 use async_trait::async_trait;
 use euphoxide::api::Message;
 use euphoxide_bot::{
-    bot::Bot,
-    command::{
-        bang::{General, Specific},
-        basic::Described,
-        botrulez::{FullHelp, Ping, ShortHelp},
-        Command, Commands, Context, Info, Propagate,
-    },
+    bang::{General, Specific},
+    basic::Described,
+    botrulez::{FullHelp, Ping, ShortHelp},
+    Command, Commands, Context, Info, Propagate,
 };
+use euphoxide_client::MultiClient;
+use log::error;
 use tokio::sync::mpsc;
 
 struct Pyramid;
@@ -26,7 +25,6 @@ impl Command for Pyramid {
         _arg: &str,
         msg: &Message,
         ctx: &Context,
-        _bot: &Bot,
     ) -> euphoxide::Result<Propagate> {
         let mut parent = msg.id;
 
@@ -42,7 +40,8 @@ impl Command for Pyramid {
     }
 }
 
-async fn run() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() {
     let (event_tx, mut event_rx) = mpsc::channel(10);
 
     let commands = Commands::new()
@@ -56,28 +55,24 @@ async fn run() -> anyhow::Result<()> {
             "help",
             FullHelp::new().with_after("Created using euphoxide."),
         )))
-        .then(General::new("pyramid", Pyramid));
+        .then(General::new("pyramid", Pyramid))
+        .build();
 
-    let bot: Bot = Bot::new_simple(commands, event_tx);
+    let clients = MultiClient::new(event_tx);
 
-    bot.clients
+    clients
         .client_builder("test")
         .with_username("examplebot")
         .build_and_add()
         .await;
 
     while let Some(event) = event_rx.recv().await {
-        bot.handle_event(event);
-    }
-
-    Ok(())
-}
-
-#[tokio::main]
-async fn main() {
-    loop {
-        if let Err(err) = run().await {
-            println!("Error while running: {err}");
-        }
+        let commands = commands.clone();
+        let clients = clients.clone();
+        tokio::task::spawn(async move {
+            if let Err(err) = commands.handle_event(clients, event).await {
+                error!("Oops: {err}")
+            }
+        });
     }
 }

@@ -4,7 +4,7 @@ pub mod botrulez;
 #[cfg(feature = "clap")]
 pub mod clap;
 
-use std::future::Future;
+use std::{future::Future, sync::Arc};
 
 use async_trait::async_trait;
 use euphoxide::{
@@ -14,18 +14,18 @@ use euphoxide::{
         state::{Joined, State},
     },
 };
-use euphoxide_client::{Client, MultiClientEvent};
-
-use crate::bot::Bot;
+use euphoxide_client::{Client, MultiClient, MultiClientEvent};
 
 #[non_exhaustive]
-pub struct Context {
+pub struct Context<E = euphoxide::Error> {
+    pub commands: Arc<Commands<E>>,
+    pub clients: MultiClient,
     pub client: Client,
     pub conn: ClientConnHandle,
     pub joined: Joined,
 }
 
-impl Context {
+impl<E> Context<E> {
     pub async fn send(
         &self,
         content: impl ToString,
@@ -111,17 +111,11 @@ pub enum Propagate {
 #[allow(unused_variables)]
 #[async_trait]
 pub trait Command<E = euphoxide::Error> {
-    fn info(&self, ctx: &Context) -> Info {
+    fn info(&self, ctx: &Context<E>) -> Info {
         Info::default()
     }
 
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E>;
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E>;
 }
 
 pub struct Commands<E = euphoxide::Error> {
@@ -142,14 +136,44 @@ impl<E> Commands<E> {
         self
     }
 
-    pub fn infos(&self, ctx: &Context) -> Vec<Info> {
+    pub fn build(self) -> Arc<Self> {
+        Arc::new(self)
+    }
+
+    pub fn infos(&self, ctx: &Context<E>) -> Vec<Info> {
         self.commands.iter().map(|c| c.info(ctx)).collect()
     }
 
-    pub(crate) async fn on_event(
-        &self,
+    pub async fn handle_message(
+        self: Arc<Self>,
+        clients: MultiClient,
+        client: Client,
+        conn: ClientConnHandle,
+        joined: Joined,
+        msg: &Message,
+    ) -> Result<Propagate, E> {
+        let ctx = Context {
+            commands: self.clone(),
+            clients,
+            client,
+            conn,
+            joined,
+        };
+
+        for command in &self.commands {
+            let propagate = command.execute(&msg.content, msg, &ctx).await?;
+            if propagate == Propagate::No {
+                return Ok(Propagate::No);
+            }
+        }
+
+        Ok(Propagate::Yes)
+    }
+
+    pub async fn handle_event(
+        self: Arc<Self>,
+        clients: MultiClient,
         event: MultiClientEvent,
-        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         let MultiClientEvent::Packet {
             client,
@@ -169,20 +193,8 @@ impl<E> Commands<E> {
             return Ok(Propagate::Yes);
         };
 
-        let ctx = Context {
-            client,
-            conn,
-            joined,
-        };
-
-        for command in &self.commands {
-            let propagate = command.execute(&msg.content, msg, &ctx, bot).await?;
-            if propagate == Propagate::No {
-                return Ok(Propagate::No);
-            }
-        }
-
-        Ok(Propagate::Yes)
+        self.handle_message(clients, client, conn, joined, msg)
+            .await
     }
 }
 

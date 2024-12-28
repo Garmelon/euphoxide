@@ -5,10 +5,7 @@ use euphoxide::api::Message;
 
 #[cfg(feature = "clap")]
 use crate::command::clap::ClapCommand;
-use crate::{
-    bot::Bot,
-    command::{Command, Context, Propagate},
-};
+use crate::command::{Command, Context, Propagate};
 
 #[derive(Default)]
 pub struct FullHelp {
@@ -31,7 +28,7 @@ impl FullHelp {
         self
     }
 
-    fn formulate_reply<E>(&self, ctx: &Context, bot: &Bot<E>) -> String {
+    fn formulate_reply<E>(&self, ctx: &Context<E>) -> String {
         let mut result = String::new();
 
         if !self.before.is_empty() {
@@ -39,7 +36,7 @@ impl FullHelp {
             result.push('\n');
         }
 
-        for info in bot.commands.infos(ctx) {
+        for info in ctx.commands.infos(ctx) {
             if let Some(trigger) = &info.trigger {
                 result.push_str(trigger);
                 if let Some(description) = &info.description {
@@ -64,15 +61,9 @@ impl<E> Command<E> for FullHelp
 where
     E: From<euphoxide::Error>,
 {
-    async fn execute(
-        &self,
-        arg: &str,
-        msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
-            let reply = self.formulate_reply(ctx, bot);
+            let reply = self.formulate_reply(ctx);
             ctx.reply_only(msg.id, reply).await?;
             Ok(Propagate::No)
         } else {
@@ -98,10 +89,9 @@ where
         &self,
         _args: Self::Args,
         msg: &Message,
-        ctx: &Context,
-        bot: &Bot<E>,
+        ctx: &Context<E>,
     ) -> Result<Propagate, E> {
-        let reply = self.formulate_reply(ctx, bot);
+        let reply = self.formulate_reply(ctx);
         ctx.reply_only(msg.id, reply).await?;
         Ok(Propagate::No)
     }
