@@ -7,6 +7,8 @@ pub mod clap;
 use std::{future::Future, sync::Arc};
 
 use async_trait::async_trait;
+use bang::{General, Global, Specific};
+use basic::{Described, Prefixed};
 use euphoxide::{
     api::{self, Data, Message, MessageId, SendEvent, SendReply},
     client::{
@@ -117,6 +119,39 @@ pub trait Command<E = euphoxide::Error> {
 
     async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E>;
 }
+
+pub trait CommandExt: Sized {
+    fn described(self) -> Described<Self> {
+        Described::new(self)
+    }
+
+    fn hidden(self) -> Described<Self> {
+        Described::hidden(self)
+    }
+
+    fn prefixed(self, prefix: impl ToString) -> Prefixed<Self> {
+        Prefixed::new(prefix, self)
+    }
+
+    fn global(self, name: impl ToString) -> Global<Self> {
+        Global::new(name, self)
+    }
+
+    fn general(self, name: impl ToString) -> General<Self> {
+        General::new(name, self)
+    }
+
+    fn specific(self, name: impl ToString) -> Specific<Self> {
+        Specific::new(name, self)
+    }
+}
+
+// Sadly this doesn't work: `impl<E, C: Command<E>> CommandExt for C {}`
+// It leaves E unconstrained. Instead, we just implement CommandExt for all
+// types. This is fine since it'll crash and burn once we try to use the created
+// commands as actual commands. It also follows the spirit of adding trait
+// constraints only where they are necessary.
+impl<C> CommandExt for C {}
 
 pub struct Commands<E = euphoxide::Error> {
     commands: Vec<Box<dyn Command<E> + Sync + Send>>,
