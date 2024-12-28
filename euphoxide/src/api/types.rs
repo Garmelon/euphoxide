@@ -22,7 +22,7 @@ pub struct AccountView {
 /// Mode of authentication.
 ///
 /// <https://euphoria.leet.nu/heim/api#authoption>
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AuthOption {
     /// Authentication with a passcode, where a key is derived from the passcode

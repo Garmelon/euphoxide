@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["euphoxide"]
+members = ["euphoxide", "euphoxide-client"]
 
 [workspace.package]
 version = "0.6.0"
@@ -8,6 +8,7 @@ edition = "2021"
 
 [workspace.dependencies]
 caseless = "0.2.1"
+cookie = "0.18.1"
 futures-util = "0.3.31"
 jiff = { version = "0.1.15", default-features = false, features = ["std"] }
 log = "0.4.22"
@@ -19,6 +20,9 @@ unicode-normalization = "0.1.24"
 # For examples
 anyhow = "1.0.94"
 rustls = "0.23.19"
+# In this workspace
+euphoxide = { path = "./euphoxide" }
+euphoxide-client = { path = "./euphoxide-client" }
 
 [workspace.lints]
 rust.unsafe_code = { level = "forbid", priority = 1 }
