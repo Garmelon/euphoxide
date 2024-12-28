@@ -9,7 +9,7 @@ use crate::bot::Bot;
 use super::{Command, Context, Info, Propagate};
 
 #[async_trait]
-pub trait ClapCommand<S, E> {
+pub trait ClapCommand<E> {
     type Args;
 
     async fn execute(
@@ -17,7 +17,7 @@ pub trait ClapCommand<S, E> {
         args: Self::Args,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E>;
 }
 
@@ -101,11 +101,10 @@ fn parse_quoted_args(text: &str) -> Result<Vec<String>, &'static str> {
 pub struct Clap<C>(pub C);
 
 #[async_trait]
-impl<S, E, C> Command<S, E> for Clap<C>
+impl<E, C> Command<E> for Clap<C>
 where
-    S: Send + Sync,
     E: From<euphoxide::Error>,
-    C: ClapCommand<S, E> + Sync,
+    C: ClapCommand<E> + Sync,
     C::Args: Parser + Send,
 {
     fn info(&self, _ctx: &Context) -> Info {
@@ -120,7 +119,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,

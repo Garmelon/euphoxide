@@ -47,10 +47,9 @@ impl<C> Global<C> {
 }
 
 #[async_trait]
-impl<S, E, C> Command<S, E> for Global<C>
+impl<E, C> Command<E> for Global<C>
 where
-    S: Send + Sync,
-    C: Command<S, E> + Sync,
+    C: Command<E> + Sync,
 {
     fn info(&self, ctx: &Context) -> Info {
         self.inner
@@ -63,7 +62,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
@@ -99,10 +98,9 @@ impl<C> General<C> {
 }
 
 #[async_trait]
-impl<S, E, C> Command<S, E> for General<C>
+impl<E, C> Command<E> for General<C>
 where
-    S: Send + Sync,
-    C: Command<S, E> + Sync,
+    C: Command<E> + Sync,
 {
     fn info(&self, ctx: &Context) -> Info {
         self.inner
@@ -115,7 +113,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
@@ -158,10 +156,9 @@ impl<C> Specific<C> {
 }
 
 #[async_trait]
-impl<S, E, C> Command<S, E> for Specific<C>
+impl<E, C> Command<E> for Specific<C>
 where
-    S: Send + Sync,
-    C: Command<S, E> + Sync,
+    C: Command<E> + Sync,
 {
     fn info(&self, ctx: &Context) -> Info {
         let nick = nick::mention(&ctx.joined.session.name);
@@ -175,7 +172,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);

@@ -110,7 +110,7 @@ pub enum Propagate {
 
 #[allow(unused_variables)]
 #[async_trait]
-pub trait Command<S = (), E = euphoxide::Error> {
+pub trait Command<E = euphoxide::Error> {
     fn info(&self, ctx: &Context) -> Info {
         Info::default()
     }
@@ -120,24 +120,24 @@ pub trait Command<S = (), E = euphoxide::Error> {
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E>;
 }
 
-pub struct Commands<B = (), E = euphoxide::Error> {
-    commands: Vec<Box<dyn Command<B, E> + Sync + Send>>,
+pub struct Commands<E = euphoxide::Error> {
+    commands: Vec<Box<dyn Command<E> + Sync + Send>>,
 }
 
-impl<S, E> Commands<S, E> {
+impl<E> Commands<E> {
     pub fn new() -> Self {
         Self { commands: vec![] }
     }
 
-    pub fn add(&mut self, command: impl Command<S, E> + Sync + Send + 'static) {
+    pub fn add(&mut self, command: impl Command<E> + Sync + Send + 'static) {
         self.commands.push(Box::new(command));
     }
 
-    pub fn then(mut self, command: impl Command<S, E> + Sync + Send + 'static) -> Self {
+    pub fn then(mut self, command: impl Command<E> + Sync + Send + 'static) -> Self {
         self.add(command);
         self
     }
@@ -149,7 +149,7 @@ impl<S, E> Commands<S, E> {
     pub(crate) async fn on_event(
         &self,
         event: MultiClientEvent,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         let MultiClientEvent::Packet {
             client,
@@ -187,7 +187,7 @@ impl<S, E> Commands<S, E> {
 }
 
 // Has fewer restrictions on generic types than #[derive(Default)].
-impl<S, E> Default for Commands<S, E> {
+impl<E> Default for Commands<E> {
     fn default() -> Self {
         Self::new()
     }

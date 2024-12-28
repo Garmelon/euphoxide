@@ -62,7 +62,7 @@ pub trait HasStartTime {
 }
 
 impl Uptime {
-    fn formulate_reply<S, E>(&self, ctx: &Context, bot: &Bot<S, E>, connected: bool) -> String {
+    fn formulate_reply<E>(&self, ctx: &Context, bot: &Bot<E>, connected: bool) -> String {
         let start = bot.start_time;
         let now = Timestamp::now();
 
@@ -86,9 +86,8 @@ impl Uptime {
 }
 
 #[async_trait]
-impl<S, E> Command<S, E> for Uptime
+impl<E> Command<E> for Uptime
 where
-    S: Send + Sync,
     E: From<euphoxide::Error>,
 {
     async fn execute(
@@ -96,7 +95,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             let reply = self.formulate_reply(ctx, bot, false);
@@ -119,9 +118,8 @@ pub struct UptimeArgs {
 
 #[cfg(feature = "clap")]
 #[async_trait]
-impl<S, E> ClapCommand<S, E> for Uptime
+impl<E> ClapCommand<E> for Uptime
 where
-    S: Send + Sync,
     E: From<euphoxide::Error>,
 {
     type Args = UptimeArgs;
@@ -131,7 +129,7 @@ where
         args: Self::Args,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         let reply = self.formulate_reply(ctx, bot, args.connected);
         ctx.reply_only(msg.id, reply).await?;
