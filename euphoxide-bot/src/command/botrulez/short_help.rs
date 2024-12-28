@@ -19,7 +19,7 @@ impl ShortHelp {
 }
 
 #[async_trait]
-impl<S, E> Command<S, E> for ShortHelp
+impl<E> Command<E> for ShortHelp
 where
     E: From<euphoxide::Error>,
 {
@@ -28,7 +28,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        _bot: &Bot<S, E>,
+        _bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             ctx.reply_only(msg.id, &self.0).await?;
@@ -46,7 +46,7 @@ pub struct ShortHelpArgs {}
 
 #[cfg(feature = "clap")]
 #[async_trait]
-impl<S, E> ClapCommand<S, E> for ShortHelp
+impl<E> ClapCommand<E> for ShortHelp
 where
     E: From<euphoxide::Error>,
 {
@@ -57,7 +57,7 @@ where
         _args: Self::Args,
         msg: &Message,
         ctx: &Context,
-        _bot: &Bot<S, E>,
+        _bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         ctx.reply_only(msg.id, &self.0).await?;
         Ok(Propagate::No)

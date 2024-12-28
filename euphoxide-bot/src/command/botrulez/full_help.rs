@@ -31,7 +31,7 @@ impl FullHelp {
         self
     }
 
-    fn formulate_reply<S, E>(&self, ctx: &Context, bot: &Bot<S, E>) -> String {
+    fn formulate_reply<E>(&self, ctx: &Context, bot: &Bot<E>) -> String {
         let mut result = String::new();
 
         if !self.before.is_empty() {
@@ -60,9 +60,8 @@ impl FullHelp {
 }
 
 #[async_trait]
-impl<S, E> Command<S, E> for FullHelp
+impl<E> Command<E> for FullHelp
 where
-    S: Send + Sync,
     E: From<euphoxide::Error>,
 {
     async fn execute(
@@ -70,7 +69,7 @@ where
         arg: &str,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             let reply = self.formulate_reply(ctx, bot);
@@ -89,9 +88,8 @@ pub struct FullHelpArgs {}
 
 #[cfg(feature = "clap")]
 #[async_trait]
-impl<S, E> ClapCommand<S, E> for FullHelp
+impl<E> ClapCommand<E> for FullHelp
 where
-    S: Send + Sync,
     E: From<euphoxide::Error>,
 {
     type Args = FullHelpArgs;
@@ -101,7 +99,7 @@ where
         _args: Self::Args,
         msg: &Message,
         ctx: &Context,
-        bot: &Bot<S, E>,
+        bot: &Bot<E>,
     ) -> Result<Propagate, E> {
         let reply = self.formulate_reply(ctx, bot);
         ctx.reply_only(msg.id, reply).await?;
