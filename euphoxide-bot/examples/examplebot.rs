@@ -3,10 +3,8 @@ use std::time::Duration;
 use async_trait::async_trait;
 use euphoxide::api::Message;
 use euphoxide_bot::{
-    bang::{General, Specific},
-    basic::Described,
     botrulez::{FullHelp, Ping, ShortHelp},
-    Command, Commands, Context, Info, Propagate,
+    Command, CommandExt, Commands, Context, Info, Propagate,
 };
 use euphoxide_client::MultiClient;
 use log::error;
@@ -45,17 +43,20 @@ async fn main() {
     let (event_tx, mut event_rx) = mpsc::channel(10);
 
     let commands = Commands::new()
-        .then(Described::hidden(General::new("ping", Ping::default())))
-        .then(Described::hidden(Specific::new("ping", Ping::default())))
-        .then(Described::hidden(General::new(
-            "help",
-            ShortHelp::new("/me demonstrates how to use euphoxide"),
-        )))
-        .then(Described::hidden(Specific::new(
-            "help",
-            FullHelp::new().with_after("Created using euphoxide."),
-        )))
-        .then(General::new("pyramid", Pyramid))
+        .then(Ping::default().general("ping").hidden())
+        .then(Ping::default().specific("ping").hidden())
+        .then(
+            ShortHelp::new("/me demonstrates how to use euphoxide")
+                .general("help")
+                .hidden(),
+        )
+        .then(
+            FullHelp::new()
+                .with_after("Created using euphoxide.")
+                .specific("help")
+                .hidden(),
+        )
+        .then(Pyramid.general("pyramid"))
         .build();
 
     let clients = MultiClient::new(event_tx);
