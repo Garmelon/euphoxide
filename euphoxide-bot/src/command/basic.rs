@@ -1,5 +1,7 @@
 //! Basic command wrappers.
 
+use std::future::Future;
+
 use async_trait::async_trait;
 use euphoxide::api::Message;
 
@@ -95,5 +97,45 @@ where
         } else {
             Ok(Propagate::Yes)
         }
+    }
+}
+
+// Black type magic, thanks a lot to https://github.com/kpreid and the
+// async_fn_traits crate!
+
+// TODO Simplify all this once AsyncFn becomes stable
+
+pub trait HandlerFn<'a0, 'a1, 'a2, E>:
+    Fn(&'a0 str, &'a1 Message, &'a2 Context<E>) -> Self::Future
+where
+    E: 'a2,
+{
+    type Future: Future<Output = Result<Propagate, E>> + Send;
+}
+
+impl<'a0, 'a1, 'a2, E, F, Fut> HandlerFn<'a0, 'a1, 'a2, E> for F
+where
+    E: 'a2,
+    F: Fn(&'a0 str, &'a1 Message, &'a2 Context<E>) -> Fut + ?Sized,
+    Fut: Future<Output = Result<Propagate, E>> + Send,
+{
+    type Future = Fut;
+}
+
+pub struct FromHandler<F>(F);
+
+impl<F> FromHandler<F> {
+    pub fn new(f: F) -> Self {
+        Self(f)
+    }
+}
+
+#[async_trait]
+impl<E, F> Command<E> for FromHandler<F>
+where
+    F: for<'a0, 'a1, 'a2> HandlerFn<'a0, 'a1, 'a2, E> + Sync,
+{
+    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+        (self.0)(arg, msg, ctx).await
     }
 }
