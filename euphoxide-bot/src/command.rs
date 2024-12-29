@@ -148,6 +148,11 @@ pub trait CommandExt: Sized {
     fn specific(self, name: impl ToString) -> Specific<Self> {
         Specific::new(name, self)
     }
+
+    #[cfg(feature = "clap")]
+    fn clap(self) -> clap::Clap<Self> {
+        clap::Clap(self)
+    }
 }
 
 // Sadly this doesn't work: `impl<E, C: Command<E>> CommandExt for C {}`

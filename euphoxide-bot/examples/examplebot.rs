@@ -4,6 +4,7 @@ use euphoxide::api::Message;
 use euphoxide_bot::{
     basic::FromHandler,
     botrulez::{FullHelp, Ping, ShortHelp},
+    clap::FromClapHandler,
     CommandExt, Commands, Context, Propagate,
 };
 use euphoxide_client::MultiClient;
@@ -21,6 +22,21 @@ async fn pyramid(_arg: &str, msg: &Message, ctx: &Context) -> euphoxide::Result<
     }
 
     ctx.reply_only(parent, "brick").await?;
+    Ok(Propagate::No)
+}
+
+#[derive(clap::Parser)]
+struct AddArgs {
+    lhs: i64,
+    rhs: i64,
+}
+
+async fn add(args: AddArgs, msg: &Message, ctx: &Context) -> euphoxide::Result<Propagate> {
+    let result = args.lhs + args.rhs;
+
+    ctx.reply_only(msg.id, format!("{} + {} = {result}", args.lhs, args.rhs))
+        .await?;
+
     Ok(Propagate::No)
 }
 
@@ -47,6 +63,13 @@ async fn main() {
                 .described()
                 .with_description("build a pyramid")
                 .general("pyramid"),
+        )
+        .then(
+            FromClapHandler::new(add)
+                .clap()
+                .described()
+                .with_description("add two numbers")
+                .general("add"),
         )
         .build();
 
