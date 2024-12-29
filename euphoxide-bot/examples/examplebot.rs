@@ -29,22 +29,22 @@ async fn main() {
     let (event_tx, mut event_rx) = mpsc::channel(10);
 
     let commands = Commands::<euphoxide::Error>::new()
-        .then(Ping::default().general("ping").hidden())
-        .then(Ping::default().specific("ping").hidden())
+        .then(Ping::default().general("ping").with_info_hidden())
+        .then(Ping::default().specific("ping").with_info_hidden())
         .then(
             ShortHelp::new("/me demonstrates how to use euphoxide")
                 .general("help")
-                .hidden(),
+                .with_info_hidden(),
         )
         .then(
             FullHelp::new()
                 .with_after("Created using euphoxide.")
                 .specific("help")
-                .hidden(),
+                .with_info_hidden(),
         )
         .then(
             FromHandler::new(pyramid)
-                .described()
+                .with_info()
                 .with_description("build a pyramid")
                 .general("pyramid"),
         )

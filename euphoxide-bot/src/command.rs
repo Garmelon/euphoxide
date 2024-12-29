@@ -8,7 +8,7 @@ use std::{future::Future, sync::Arc};
 
 use async_trait::async_trait;
 use bang::{General, Global, Specific};
-use basic::{Described, Prefixed};
+use basic::{Prefixed, WithInfo};
 use euphoxide::{
     api::{self, Data, Message, MessageId, SendEvent, SendReply},
     client::{
@@ -121,12 +121,12 @@ pub trait Command<E = euphoxide::Error> {
 }
 
 pub trait CommandExt: Sized {
-    fn described(self) -> Described<Self> {
-        Described::new(self)
+    fn with_info(self) -> WithInfo<Self> {
+        WithInfo::new(self)
     }
 
-    fn hidden(self) -> Described<Self> {
-        Described::hidden(self)
+    fn with_info_hidden(self) -> WithInfo<Self> {
+        WithInfo::hidden(self)
     }
 
     fn prefixed(self, prefix: impl ToString) -> Prefixed<Self> {

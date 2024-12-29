@@ -8,13 +8,13 @@ use euphoxide::api::Message;
 use super::{Command, Context, Info, Propagate};
 
 /// Rewrite or hide command info.
-pub struct Described<C> {
+pub struct WithInfo<C> {
     pub inner: C,
     pub trigger: Option<Option<String>>,
     pub description: Option<Option<String>>,
 }
 
-impl<C> Described<C> {
+impl<C> WithInfo<C> {
     pub fn new(inner: C) -> Self {
         Self {
             inner,
@@ -51,7 +51,7 @@ impl<C> Described<C> {
 }
 
 #[async_trait]
-impl<E, C> Command<E> for Described<C>
+impl<E, C> Command<E> for WithInfo<C>
 where
     C: Command<E> + Sync,
 {
