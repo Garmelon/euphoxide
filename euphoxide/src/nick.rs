@@ -3,7 +3,7 @@
 use caseless::Caseless;
 use unicode_normalization::UnicodeNormalization;
 
-use crate::emoji::Emoji;
+use crate::Emoji;
 
 /// Does not remove emoji.
 fn hue_normalize(text: &str) -> String {
