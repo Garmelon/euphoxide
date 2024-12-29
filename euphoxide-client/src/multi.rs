@@ -199,6 +199,10 @@ impl MultiClient {
         }
     }
 
+    pub fn config(&self) -> &MultiClientConfig {
+        &self.config
+    }
+
     pub fn start_time(&self) -> Timestamp {
         self.start_time
     }
