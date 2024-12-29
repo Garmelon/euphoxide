@@ -1,4 +1,4 @@
-use std::{fmt, result, str::FromStr};
+use std::{fmt, result, str::FromStr, sync::Arc};
 
 use cookie::Cookie;
 use euphoxide::{
@@ -120,7 +120,7 @@ impl ClientEvent {
 
 struct ClientTask {
     id: usize,
-    config: ClientConfig,
+    config: Arc<ClientConfig>,
 
     cmd_rx: mpsc::Receiver<Command>,
     event_tx: mpsc::Sender<ClientEvent>,
@@ -337,6 +337,7 @@ impl ClientTask {
 #[derive(Clone)]
 pub struct Client {
     id: usize,
+    config: Arc<ClientConfig>,
     cmd_tx: mpsc::Sender<Command>,
     start_time: Timestamp,
 }
@@ -353,11 +354,13 @@ impl Client {
     pub fn new(id: usize, config: ClientConfig, event_tx: mpsc::Sender<ClientEvent>) -> Self {
         let start_time = Timestamp::now();
 
+        let config = Arc::new(config);
+
         let (cmd_tx, cmd_rx) = mpsc::channel(config.server.cmd_channel_bufsize);
 
         let task = ClientTask {
             id,
-            config,
+            config: config.clone(),
             attempts: 0,
             never_joined: false,
             cmd_rx,
@@ -368,6 +371,7 @@ impl Client {
 
         Self {
             id,
+            config,
             cmd_tx,
             start_time,
         }
@@ -375,6 +379,10 @@ impl Client {
 
     pub fn id(&self) -> usize {
         self.id
+    }
+
+    pub fn config(&self) -> &ClientConfig {
+        &self.config
     }
 
     pub fn start_time(&self) -> Timestamp {
