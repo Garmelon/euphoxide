@@ -7,8 +7,6 @@ pub mod clap;
 use std::{future::Future, sync::Arc};
 
 use async_trait::async_trait;
-use bang::{General, Global, Specific};
-use basic::{Described, Prefixed};
 use euphoxide::{
     api::{self, Data, Message, MessageId, SendEvent, SendReply},
     client::{
@@ -17,6 +15,11 @@ use euphoxide::{
     },
 };
 use euphoxide_client::{Client, MultiClient, MultiClientEvent};
+
+use self::{
+    bang::{General, Global, Specific},
+    basic::{Described, Prefixed},
+};
 
 #[non_exhaustive]
 pub struct Context<E = euphoxide::Error> {
