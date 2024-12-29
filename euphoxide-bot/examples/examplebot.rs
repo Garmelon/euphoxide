@@ -44,35 +44,43 @@ async fn add(args: AddArgs, msg: &Message, ctx: &Context) -> euphoxide::Result<P
 async fn main() {
     let (event_tx, mut event_rx) = mpsc::channel(10);
 
-    let commands = Commands::new()
-        .then(Ping::default().general("ping").hidden())
-        .then(Ping::default().specific("ping").hidden())
-        .then(
-            ShortHelp::new("/me demonstrates how to use euphoxide")
-                .general("help")
-                .hidden(),
-        )
-        .then(
-            FullHelp::new()
-                .with_after("Created using euphoxide.")
-                .specific("help")
-                .hidden(),
-        )
-        .then(
-            FromHandler::new(pyramid)
-                .described()
-                .with_description("build a pyramid")
-                .general("pyramid"),
-        )
-        .then(
-            FromClapHandler::new(add)
-                .clap()
-                .described()
-                .with_description("add two numbers")
-                .general("add"),
-        )
-        .build();
+    let mut commands = Commands::new();
 
+    Ping::default()
+        .general("ping")
+        .hidden()
+        .add_to(&mut commands);
+
+    Ping::default()
+        .specific("ping")
+        .hidden()
+        .add_to(&mut commands);
+
+    ShortHelp::new("/me demonstrates how to use euphoxide")
+        .general("help")
+        .hidden()
+        .add_to(&mut commands);
+
+    FullHelp::new()
+        .with_after("Created using euphoxide.")
+        .specific("help")
+        .hidden()
+        .add_to(&mut commands);
+
+    FromHandler::new(pyramid)
+        .described()
+        .with_description("build a pyramid")
+        .general("pyramid")
+        .add_to(&mut commands);
+
+    FromClapHandler::new(add)
+        .clap()
+        .described()
+        .with_description("add two numbers")
+        .general("add")
+        .add_to(&mut commands);
+
+    let commands = commands.build();
     let clients = MultiClient::new(event_tx);
 
     clients
