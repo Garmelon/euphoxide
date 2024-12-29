@@ -153,6 +153,13 @@ pub trait CommandExt: Sized {
     fn clap(self) -> clap::Clap<Self> {
         clap::Clap(self)
     }
+
+    fn add_to<E>(self, commands: &mut Commands<E>)
+    where
+        Self: Command<E> + Send + Sync + 'static,
+    {
+        commands.add(self);
+    }
 }
 
 // Sadly this doesn't work: `impl<E, C: Command<E>> CommandExt for C {}`
