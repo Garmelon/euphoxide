@@ -1,5 +1,7 @@
 //! [`clap`]-based commands.
 
+use std::{future::Future, marker::PhantomData};
+
 use async_trait::async_trait;
 use clap::{CommandFactory, Parser};
 use euphoxide::api::Message;
@@ -133,6 +135,64 @@ where
         };
 
         self.0.execute(args, msg, ctx).await
+    }
+}
+
+// TODO Simplify all this once AsyncFn becomes stable
+
+pub trait ClapHandlerFn<'a0, 'a1, A, E>:
+    Fn(A, &'a0 Message, &'a1 Context<E>) -> Self::Future
+where
+    E: 'a1,
+{
+    type Future: Future<Output = Result<Propagate, E>> + Send;
+}
+
+impl<'a0, 'a1, A, E, F, Fut> ClapHandlerFn<'a0, 'a1, A, E> for F
+where
+    E: 'a1,
+    F: Fn(A, &'a0 Message, &'a1 Context<E>) -> Fut + ?Sized,
+    Fut: Future<Output = Result<Propagate, E>> + Send,
+{
+    type Future = Fut;
+}
+
+pub struct FromClapHandler<A, F> {
+    _a: PhantomData<A>,
+    pub handler: F,
+}
+
+impl<A, F> FromClapHandler<A, F> {
+    // Artificially constrained so we don't accidentally choose an incorrect A.
+    // Relying on type inference of A can result in unknown type errors even
+    // though we know what A should be based on F.
+    pub fn new<'a0, 'a1, E, Fut>(handler: F) -> Self
+    where
+        F: Fn(A, &'a0 Message, &'a1 Context<E>) -> Fut,
+        E: 'a1,
+    {
+        Self {
+            _a: PhantomData,
+            handler,
+        }
+    }
+}
+
+#[async_trait]
+impl<A, E, F> ClapCommand<E> for FromClapHandler<A, F>
+where
+    F: for<'a0, 'a1> ClapHandlerFn<'a0, 'a1, A, E> + Sync,
+    A: Send + Sync + 'static,
+{
+    type Args = A;
+
+    async fn execute(
+        &self,
+        args: Self::Args,
+        msg: &Message,
+        ctx: &Context<E>,
+    ) -> Result<Propagate, E> {
+        (self.handler)(args, msg, ctx).await
     }
 }
 
