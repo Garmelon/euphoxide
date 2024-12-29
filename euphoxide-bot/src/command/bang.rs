@@ -24,9 +24,9 @@ pub fn parse_prefix_initiated<'a>(text: &'a str, prefix: &str) -> Option<(&'a st
 }
 
 pub struct Global<C> {
-    prefix: String,
-    name: String,
-    inner: C,
+    pub prefix: String,
+    pub name: String,
+    pub inner: C,
 }
 
 impl<C> Global<C> {
@@ -69,9 +69,9 @@ where
 }
 
 pub struct General<C> {
-    prefix: String,
-    name: String,
-    inner: C,
+    pub prefix: String,
+    pub name: String,
+    pub inner: C,
 }
 
 impl<C> General<C> {
@@ -121,9 +121,9 @@ where
 }
 
 pub struct Specific<C> {
-    prefix: String,
-    name: String,
-    inner: C,
+    pub prefix: String,
+    pub name: String,
+    pub inner: C,
 }
 
 impl<C> Specific<C> {

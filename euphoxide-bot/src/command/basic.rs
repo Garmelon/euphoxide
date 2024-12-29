@@ -69,8 +69,8 @@ where
 }
 
 pub struct Prefixed<C> {
-    prefix: String,
-    inner: C,
+    pub prefix: String,
+    pub inner: C,
 }
 
 impl<C> Prefixed<C> {
@@ -122,7 +122,7 @@ where
     type Future = Fut;
 }
 
-pub struct FromHandler<F>(F);
+pub struct FromHandler<F>(pub F);
 
 impl<F> FromHandler<F> {
     pub fn new(f: F) -> Self {
