@@ -2,6 +2,7 @@
 name = "euphoxide-client"
 version = { workspace = true }
 edition = { workspace = true }
+rust-version = { workspace = true }
 
 [dependencies]
 cookie = { workspace = true }
