@@ -14,6 +14,8 @@ Procedure when bumping the version number:
 
 ## Unreleased
 
+## v0.6.0 - 2025-02-21
+
 ### Added
 
 - `api::Time::from_timestamp`
