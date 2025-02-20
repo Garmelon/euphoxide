@@ -427,7 +427,7 @@ impl Conn {
             }
             tungstenite::Message::Ping(_) => {}
             tungstenite::Message::Pong(payload) => {
-                if self.last_ws_ping_payload == Some(payload) {
+                if self.last_ws_ping_payload == Some(payload.to_vec()) {
                     self.last_ws_ping_replied_to = true;
                 }
             }
@@ -528,7 +528,9 @@ impl Conn {
         let ws_payload = now.as_millisecond().to_be_bytes().to_vec();
         self.last_ws_ping_payload = Some(ws_payload.clone());
         self.last_ws_ping_replied_to = false;
-        self.ws.send(tungstenite::Message::Ping(ws_payload)).await?;
+        self.ws
+            .send(tungstenite::Message::Ping(ws_payload.into()))
+            .await?;
 
         // Send new euph ping
         let euph_payload = Time::from_timestamp(now);
@@ -561,7 +563,7 @@ impl Conn {
         .into_packet()?;
         debug!(target: "euphoxide::conn::full", "Sending {packet:?}");
 
-        let msg = tungstenite::Message::Text(serde_json::to_string(&packet)?);
+        let msg = tungstenite::Message::Text(serde_json::to_string(&packet)?.into());
         self.ws.send(msg).await?;
 
         let _ = reply_tx.send(self.replies.wait_for(id));
@@ -579,7 +581,7 @@ impl Conn {
         .into_packet()?;
         debug!(target: "euphoxide::conn::full", "Sending {packet:?}");
 
-        let msg = tungstenite::Message::Text(serde_json::to_string(&packet)?);
+        let msg = tungstenite::Message::Text(serde_json::to_string(&packet)?.into());
         self.ws.send(msg).await?;
 
         Ok(())
