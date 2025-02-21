@@ -123,6 +123,34 @@ pub trait Command<S = (), E = euphoxide::Error> {
     ) -> Result<Propagate, E>;
 }
 
+pub trait CommandExt: Sized {
+    fn described(self) -> basic::Described<Self> {
+        basic::Described::new(self)
+    }
+
+    fn hidden(self) -> basic::Described<Self> {
+        basic::Described::hidden(self)
+    }
+
+    fn prefixed(self, prefix: impl ToString) -> basic::Prefixed<Self> {
+        basic::Prefixed::new(prefix, self)
+    }
+
+    fn general(self, name: impl ToString) -> bang::General<Self> {
+        bang::General::new(name, self)
+    }
+
+    fn global(self, name: impl ToString) -> bang::Global<Self> {
+        bang::Global::new(name, self)
+    }
+
+    fn specific(self, name: impl ToString) -> bang::Specific<Self> {
+        bang::Specific::new(name, self)
+    }
+}
+
+impl<C> CommandExt for C {}
+
 pub struct Commands<B = (), E = euphoxide::Error> {
     commands: Vec<Box<dyn Command<B, E> + Sync + Send>>,
 }
