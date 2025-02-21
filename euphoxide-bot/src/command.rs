@@ -151,8 +151,8 @@ pub trait CommandExt: Sized {
 
 impl<C> CommandExt for C {}
 
-pub struct Commands<B = (), E = euphoxide::Error> {
-    commands: Vec<Box<dyn Command<B, E> + Sync + Send>>,
+pub struct Commands<S = (), E = euphoxide::Error> {
+    commands: Vec<Box<dyn Command<S, E> + Sync + Send>>,
 }
 
 impl<S, E> Commands<S, E> {
