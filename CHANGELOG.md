@@ -18,6 +18,10 @@ Procedure when bumping the version number:
 
 - Updated set of emoji names
 
+### Fixed
+
+- Nick hue hashing algorithm in some edge cases
+
 ## v0.6.0 - 2025-02-21
 
 ### Added

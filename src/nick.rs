@@ -5,9 +5,10 @@ use unicode_normalization::UnicodeNormalization;
 
 use crate::emoji::Emoji;
 
-/// Does not remove emoji.
-fn hue_normalize(text: &str) -> String {
-    text.chars()
+fn hue_normalize(emoji: &Emoji, text: &str) -> String {
+    emoji
+        .remove(text)
+        .chars()
         .filter(|&c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
         .map(|c| c.to_ascii_lowercase())
         .collect()
@@ -15,7 +16,7 @@ fn hue_normalize(text: &str) -> String {
 
 /// A re-implementation of [euphoria's nick hue hashing algorithm][0].
 ///
-/// [0]: https://github.com/CylonicRaider/heim/blob/master/client/lib/hueHash.js
+/// [0]: https://github.com/CylonicRaider/heim/blob/097a1fde89ada53de2b70e51e635257f27956e4e/client/lib/heim/hueHash.js
 fn hue_hash(text: &str, offset: i64) -> u8 {
     let mut val = 0_i32;
     for bibyte in text.encode_utf16() {
@@ -35,7 +36,13 @@ const GREENIE_OFFSET: i64 = 148 - 192; // 148 - hue_hash("greenie", 0)
 /// This should be slightly faster than [`hue`] but produces incorrect results
 /// if any colon-delimited emoji are present.
 pub fn hue_without_removing_emoji(nick: &str) -> u8 {
-    let normalized = hue_normalize(nick);
+    // An emoji-less version of hue_normalize
+    let normalized = nick
+        .chars()
+        .filter(|&c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        .map(|c| c.to_ascii_lowercase())
+        .collect::<String>();
+
     if normalized.is_empty() {
         hue_hash(nick, GREENIE_OFFSET)
     } else {
@@ -48,9 +55,14 @@ pub fn hue_without_removing_emoji(nick: &str) -> u8 {
 /// This is a reimplementation of [euphoria's nick hue hashing algorithm][0]. It
 /// should always return the same value as the official client's implementation.
 ///
-/// [0]: https://github.com/CylonicRaider/heim/blob/978c921063e6b06012fc8d16d9fbf1b3a0be1191/client/lib/hueHash.js
+/// [0]: https://github.com/CylonicRaider/heim/blob/097a1fde89ada53de2b70e51e635257f27956e4e/client/lib/heim/hueHash.js
 pub fn hue(emoji: &Emoji, nick: &str) -> u8 {
-    hue_without_removing_emoji(&emoji.remove(nick))
+    let normalized = hue_normalize(emoji, nick);
+    if normalized.is_empty() {
+        hue_hash(nick, GREENIE_OFFSET)
+    } else {
+        hue_hash(&normalized, GREENIE_OFFSET)
+    }
 }
 
 /// Normalize a nick to a form that can be compared against other nicks.
