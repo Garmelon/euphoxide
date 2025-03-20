@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use euphoxide::{
     api::{Data, Message, Nick, Send},
-    client::conn::ClientConnHandle,
+    client::ClientConnHandle,
 };
 use euphoxide_client::{Client, ClientEvent};
 use tokio::sync::mpsc;

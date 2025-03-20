@@ -3,10 +3,7 @@ use std::{fmt, result, str::FromStr, sync::Arc};
 use cookie::Cookie;
 use euphoxide::{
     api::{Auth, AuthOption, BounceEvent, Data, Nick, ParsedPacket},
-    client::{
-        conn::{ClientConn, ClientConnHandle},
-        state::State,
-    },
+    client::{ClientConn, ClientConnHandle, State},
 };
 use jiff::Timestamp;
 use log::warn;

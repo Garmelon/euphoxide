@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use euphoxide::{
     api::ParsedPacket,
-    client::{conn::ClientConnHandle, state::State},
+    client::{ClientConnHandle, State},
 };
 use jiff::Timestamp;
 use tokio::{

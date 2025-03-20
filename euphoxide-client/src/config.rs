@@ -4,7 +4,7 @@ use std::{
 };
 
 use cookie::CookieJar;
-use euphoxide::client::conn::ClientConnConfig;
+use euphoxide::client::ClientConnConfig;
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]

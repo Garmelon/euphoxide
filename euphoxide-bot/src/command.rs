@@ -9,10 +9,7 @@ use std::{future::Future, sync::Arc};
 use async_trait::async_trait;
 use euphoxide::{
     api::{self, Data, Message, MessageId, SendEvent, SendReply},
-    client::{
-        conn::ClientConnHandle,
-        state::{Joined, State},
-    },
+    client::{ClientConnHandle, Joined, State},
 };
 use euphoxide_client::{Client, MultiClient, MultiClientEvent};
 

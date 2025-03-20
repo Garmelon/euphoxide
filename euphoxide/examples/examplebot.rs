@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use euphoxide::{
     api::{Data, Message, Nick, Send},
-    client::conn::{ClientConn, ClientConnHandle},
+    client::{ClientConn, ClientConnHandle},
 };
 
 async fn set_nick(conn: &ClientConnHandle) -> anyhow::Result<()> {

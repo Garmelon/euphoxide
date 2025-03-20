@@ -1,4 +1,6 @@
 //! A connection from a client's perspective.
 
-pub mod conn;
-pub mod state;
+mod conn;
+mod state;
+
+pub use self::{conn::*, state::*};
