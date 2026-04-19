@@ -8,10 +8,13 @@ use euphoxide::api::Message;
 
 use super::{Command, Context, Info, Propagate};
 
+/// A [`Command`] whose arguments are parsed by [`clap`].
 #[async_trait]
 pub trait ClapCommand<E> {
+    /// The command arguments that will be parsed by clap.
     type Args;
 
+    /// Execute the command with the parsed arguments.
     async fn execute(
         &self,
         args: Self::Args,
@@ -97,6 +100,7 @@ fn parse_quoted_args(text: &str) -> Result<Vec<String>, &'static str> {
     Ok(args)
 }
 
+/// Convert a [`ClapCommand`] into a [`Command`].
 pub struct Clap<C>(pub C);
 
 #[async_trait]
@@ -138,6 +142,7 @@ where
     }
 }
 
+#[allow(missing_docs)]
 pub trait ClapHandlerFn<'a0, 'a1, A, E>:
     Fn(A, &'a0 Message, &'a1 Context<E>) -> Self::Future
 where
@@ -155,11 +160,28 @@ where
     type Future = Fut;
 }
 
+/// Convert a handler function into a [`Command`].
+///
+/// ```
+/// use euphoxide::api::Message;
+/// use euphoxide_command::{Context, Propagate, clap::FromClapHandler};
+///
+/// #[derive(clap::Parser)]
+/// struct Args {}
+///
+/// async fn handler(args: Args, msg: &Message, ctx: &Context) -> euphoxide::Result<Propagate> {
+///   todo!()
+/// }
+///
+/// let cmd = FromClapHandler::new(handler);
+/// ```
 pub struct FromClapHandler<A, F> {
     _a: PhantomData<A>,
+    /// The async handler function.
     pub handler: F,
 }
 
+#[allow(missing_docs)]
 impl<A, F> FromClapHandler<A, F> {
     // Artificially constrained so we don't accidentally choose an incorrect A.
     // Relying on type inference of A can result in unknown type errors even

@@ -1,3 +1,7 @@
+//! A bot command framework for `euphoxide`.
+//!
+//! It is considered experimental for now.
+
 pub mod bang;
 pub mod basic;
 pub mod botrulez;
@@ -18,16 +22,25 @@ use self::{
     basic::{Described, Prefixed},
 };
 
+/// Execution context for commands.
+///
+/// See [`Command`] for more details.
 #[non_exhaustive]
 pub struct Context<E = euphoxide::Error> {
+    /// The [`Commands`] instance the command is a part of.
     pub commands: Arc<Commands<E>>,
+    /// The [`Clients`] instance making up the bot.
     pub clients: Clients,
+    /// The [`Client`] that received the command.
     pub client: Client,
+    /// The connection the command was received on.
     pub conn: ClientConnHandle,
+    /// The room state at the time the command was received.
     pub joined: Joined,
 }
 
 impl<E> Context<E> {
+    /// Send a message to the room the command was received in.
     pub async fn send(
         &self,
         content: impl ToString,
@@ -40,11 +53,15 @@ impl<E> Context<E> {
             .await
     }
 
+    /// Like [`Self::send`], but ignoring the server's reply.
+    ///
+    /// This saves you from having to write `let _ =` to silence warnings.
     pub async fn send_only(&self, content: impl ToString) -> euphoxide::Result<()> {
         let _ignore = self.send(content).await?;
         Ok(())
     }
 
+    /// Send a reply to a message in the room the command was received in.
     pub async fn reply(
         &self,
         parent: MessageId,
@@ -58,6 +75,9 @@ impl<E> Context<E> {
             .await
     }
 
+    /// Like [`Self::reply`], but ignoring the server's reply.
+    ///
+    /// This saves you from having to write `let _ =` to silence warnings.
     pub async fn reply_only(
         &self,
         parent: MessageId,
