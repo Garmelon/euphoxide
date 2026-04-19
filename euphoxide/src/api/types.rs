@@ -335,7 +335,9 @@ impl fmt::Display for Snowflake {
 /// An error that occurred while parsing a [`Snowflake`].
 #[derive(Debug)]
 pub enum ParseSnowflakeError {
+    /// The string has an incorrect number of characters.
     InvalidLength(usize),
+    /// The string could not be parsed as an integer.
     ParseIntError(ParseIntError),
 }
 
@@ -417,14 +419,17 @@ impl<'de> Deserialize<'de> for Snowflake {
 pub struct Time(pub i64);
 
 impl Time {
+    /// Convert a [`Timestamp`] into a [`Time`].
     pub fn from_timestamp(time: Timestamp) -> Self {
         Self(time.as_second())
     }
 
+    /// Convert a [`Time`] into a [`Timestamp`].
     pub fn as_timestamp(&self) -> Timestamp {
         Timestamp::from_second(self.0).unwrap()
     }
 
+    /// The current time.
     pub fn now() -> Self {
         Self::from_timestamp(Timestamp::now())
     }
@@ -451,8 +456,11 @@ impl fmt::Display for UserId {
 /// What kind of user a [`UserId`] is.
 #[derive(Debug, PartialEq, Eq)]
 pub enum UserType {
+    /// A user, not signed into any account, but tracked via cookie.
     Agent,
+    /// A user signed into an account.
     Account,
+    /// Same as [`Self::Agent`], but for bots.
     Bot,
 }
 

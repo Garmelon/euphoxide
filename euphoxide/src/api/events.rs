@@ -91,6 +91,7 @@ pub struct JoinEvent(pub SessionView);
 /// <https://euphoria.leet.nu/heim/api#login-event>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginEvent {
+    /// The account id logged in to.
     pub account_id: AccountId,
 }
 

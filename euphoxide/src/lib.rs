@@ -4,10 +4,11 @@
 //! connection management. If you want to write a bot, the `euphoxide-bot` crate
 //! contains additional useful tools.
 //!
-//! # Useful links
-//!
-//! - the [euphoria.leet.nu API docs](https://euphoria.leet.nu/heim/api)
-//! - [heim](https://github.com/CylonicRaider/heim), the software underlying euphoria
+//! See also the [euphoria.leet.nu API docs](https://euphoria.leet.nu/heim/api)
+//! and [heim](https://github.com/CylonicRaider/heim), the software underlying euphoria.
+
+// TODO Move to workspace Cargo.toml
+#![warn(missing_docs)]
 
 pub mod api;
 pub mod client;

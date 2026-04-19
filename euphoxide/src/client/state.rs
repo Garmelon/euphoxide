@@ -25,7 +25,9 @@ use crate::api::{
 /// infos.
 #[derive(Debug, Clone)]
 pub enum SessionInfo {
+    /// A full set of session information.
     Full(SessionView),
+    /// A partial set of session information, observed only via [`NickEvent`].
     Partial(NickEvent),
 }
 

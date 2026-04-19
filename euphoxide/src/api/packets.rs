@@ -55,6 +55,7 @@ macro_rules! packets {
         /// A big enum containing most types of packet data.
         #[derive(Debug, Clone)]
         #[non_exhaustive]
+        #[expect(missing_docs)]
         pub enum Data {
             $( $name(super::$mod::$name), )*
             /// A valid type of packet data that this library does not model as
@@ -229,6 +230,7 @@ impl ParsedPacket {
         }
     }
 
+    /// Get the packet's content as [`Data`].
     pub fn into_data(self) -> crate::Result<Data> {
         self.content.map_err(Error::Euph)
     }

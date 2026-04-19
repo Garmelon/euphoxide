@@ -176,7 +176,9 @@ pub struct ResendVerificationEmailReply {}
 /// <https://euphoria.leet.nu/heim/api#reset-password>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResetPassword {
+    /// The namespace of a personal identifier.
     pub namespace: String,
+    /// The id of a personal identifier.
     pub id: String,
 }
 
