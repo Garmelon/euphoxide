@@ -7,7 +7,7 @@ use euphoxide_bot::{
     botrulez::{FullHelp, Ping, ShortHelp},
     clap::FromClapHandler,
 };
-use euphoxide_client::MultiClient;
+use euphoxide_client::Clients;
 use log::error;
 use tokio::sync::mpsc;
 
@@ -81,7 +81,7 @@ async fn main() {
         .add_to(&mut commands);
 
     let commands = commands.build();
-    let clients = MultiClient::new(event_tx);
+    let clients = Clients::new(event_tx);
 
     clients
         .client_builder("test")

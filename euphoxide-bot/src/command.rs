@@ -11,7 +11,7 @@ use euphoxide::{
     api::{self, Data, Message, MessageId, SendEvent, SendReply},
     client::{ClientConnHandle, Joined, State},
 };
-use euphoxide_client::{Client, ClientEvent, MultiClient};
+use euphoxide_client::{Client, ClientEvent, Clients};
 
 use self::{
     bang::{General, Global, Specific},
@@ -21,7 +21,7 @@ use self::{
 #[non_exhaustive]
 pub struct Context<E = euphoxide::Error> {
     pub commands: Arc<Commands<E>>,
-    pub clients: MultiClient,
+    pub clients: Clients,
     pub client: Client,
     pub conn: ClientConnHandle,
     pub joined: Joined,
@@ -194,7 +194,7 @@ impl<E> Commands<E> {
 
     pub async fn handle_message(
         self: Arc<Self>,
-        clients: MultiClient,
+        clients: Clients,
         client: Client,
         conn: ClientConnHandle,
         joined: Joined,
@@ -220,7 +220,7 @@ impl<E> Commands<E> {
 
     pub async fn handle_event(
         self: Arc<Self>,
-        clients: MultiClient,
+        clients: Clients,
         client: Client,
         event: ClientEvent,
     ) -> Result<Propagate, E> {

@@ -4,7 +4,7 @@ use euphoxide::{
     api::{Data, Message, Nick, Send},
     client::ClientConnHandle,
 };
-use euphoxide_client::{ClientEvent, MultiClient};
+use euphoxide_client::{ClientEvent, Clients};
 use tokio::sync::mpsc;
 
 async fn set_nick(conn: &ClientConnHandle) -> anyhow::Result<()> {
@@ -75,7 +75,7 @@ async fn run() -> anyhow::Result<()> {
     let (event_tx, mut event_rx) = mpsc::channel(10);
 
     // Don't drop the client or it will stop running.
-    let clients = MultiClient::new(event_tx);
+    let clients = Clients::new(event_tx);
 
     clients
         .client_builder("test")

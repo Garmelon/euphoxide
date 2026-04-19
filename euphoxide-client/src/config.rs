@@ -52,12 +52,12 @@ impl ClientConfig {
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]
-pub struct MultiClientConfig {
+pub struct ClientsConfig {
     pub server: ServerConfig,
     pub event_channel_bufsize: usize,
 }
 
-impl Default for MultiClientConfig {
+impl Default for ClientsConfig {
     fn default() -> Self {
         Self {
             server: ServerConfig::default(),

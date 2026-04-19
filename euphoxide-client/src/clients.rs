@@ -6,14 +6,14 @@ use tokio::{
     sync::{mpsc, oneshot},
 };
 
-use crate::{Client, ClientBuilder, ClientConfig, ClientEvent, MultiClientConfig};
+use crate::{Client, ClientBuilder, ClientConfig, ClientEvent, ClientsConfig};
 
 enum Command {
     GetClients(oneshot::Sender<Vec<Client>>),
     AddClient(ClientConfig, oneshot::Sender<Client>),
 }
 
-struct MultiClientTask {
+struct ClientsTask {
     next_id: usize,
     clients: HashMap<usize, Client>,
 
@@ -23,7 +23,7 @@ struct MultiClientTask {
     out_tx: mpsc::Sender<(Client, ClientEvent)>,
 }
 
-impl MultiClientTask {
+impl ClientsTask {
     fn purge_clients(&mut self) {
         self.clients.retain(|_, v| !v.stopped());
     }
@@ -74,19 +74,19 @@ impl MultiClientTask {
 }
 
 #[derive(Clone)]
-pub struct MultiClient {
-    config: Arc<MultiClientConfig>,
+pub struct Clients {
+    config: Arc<ClientsConfig>,
     cmd_tx: mpsc::Sender<Command>,
     start_time: Timestamp,
 }
 
-impl MultiClient {
+impl Clients {
     pub fn new(event_tx: mpsc::Sender<(Client, ClientEvent)>) -> Self {
-        Self::new_with_config(MultiClientConfig::default(), event_tx)
+        Self::new_with_config(ClientsConfig::default(), event_tx)
     }
 
     pub fn new_with_config(
-        config: MultiClientConfig,
+        config: ClientsConfig,
         event_tx: mpsc::Sender<(Client, ClientEvent)>,
     ) -> Self {
         let start_time = Timestamp::now();
@@ -97,7 +97,7 @@ impl MultiClient {
         let (cmd_tx, cmd_rx) = mpsc::channel(1);
         let (event_tx, event_rx) = mpsc::channel(config.event_channel_bufsize);
 
-        let task = MultiClientTask {
+        let task = ClientsTask {
             next_id: 0,
             clients: HashMap::new(),
             cmd_rx,
@@ -115,7 +115,7 @@ impl MultiClient {
         }
     }
 
-    pub fn config(&self) -> &MultiClientConfig {
+    pub fn config(&self) -> &ClientsConfig {
         &self.config
     }
 
@@ -140,7 +140,7 @@ impl MultiClient {
 // Builder //
 /////////////
 
-impl MultiClient {
+impl Clients {
     pub fn client_builder(&self, room: impl ToString) -> ClientBuilder<&Self> {
         ClientBuilder {
             base: self,
@@ -149,7 +149,7 @@ impl MultiClient {
     }
 }
 
-impl ClientBuilder<&MultiClient> {
+impl ClientBuilder<&Clients> {
     pub async fn build_and_add(self) -> Client {
         self.base.add_client(self.config).await
     }
