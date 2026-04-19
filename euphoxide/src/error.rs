@@ -9,6 +9,9 @@ use crate::api::PacketType;
 /// Possible euphoria communication errors.
 #[derive(Debug)]
 pub enum Error {
+    /// The URL has an invalid format.
+    InvalidUrl,
+
     /// The connection is closed.
     ConnectionClosed,
 
@@ -54,6 +57,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidUrl => write!(f, "url has invalid format"),
             Self::ConnectionClosed => write!(f, "connection closed"),
             Self::PingTimeout => write!(f, "ping timed out"),
             Self::MalformedPacket(err) => write!(f, "malformed packet: {err}"),

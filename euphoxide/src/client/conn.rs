@@ -29,8 +29,8 @@ enum ConnCommand {
 /// Configuration options for a [`ClientConn`].
 #[derive(Debug, Clone)]
 pub struct ClientConnConfig {
-    /// The domain where the server is hosted.
-    pub domain: String,
+    /// The HTTP(S) url where the server is hosted.
+    pub url: String,
     /// Whether the client should present itself as a human to the server.
     ///
     /// This should only be set if the client is directly acting on behalf of a
@@ -53,7 +53,7 @@ pub struct ClientConnConfig {
 impl Default for ClientConnConfig {
     fn default() -> Self {
         Self {
-            domain: "euphoria.leet.nu".to_string(),
+            url: "https://euphoria.leet.nu/".to_string(),
             human: false,
             channel_bufsize: 10,
             connect_timeout: Duration::from_secs(10),
@@ -212,13 +212,22 @@ impl ClientConn {
         cookies: Option<HeaderValue>,
         config: &ClientConnConfig,
     ) -> Result<(Self, Vec<HeaderValue>)> {
-        // Prepare URL
         let human = if config.human { "?h=1" } else { "" };
-        let uri = format!("wss://{}/room/{room}/ws{human}", config.domain);
-        debug!("Connecting to {uri} with cookies: {cookies:?}");
+
+        if !(config.url.starts_with("http://") || config.url.starts_with("https://")) {
+            return Err(Error::InvalidUrl);
+        };
+        let prepared_url = config
+            .url
+            .strip_prefix("http")
+            .ok_or(Error::InvalidUrl)?
+            .trim_end_matches('/');
+
+        let ws_url = format!("ws{prepared_url}/room/{room}/ws{human}");
+        debug!("Connecting to {ws_url} with cookies: {cookies:?}");
 
         // Prepare request
-        let mut request = uri.into_client_request().expect("valid request");
+        let mut request = ws_url.into_client_request().expect("valid request");
         if let Some(cookies) = cookies {
             request.headers_mut().append(header::COOKIE, cookies);
         }
