@@ -69,24 +69,42 @@ enum Command {
     Stop,
 }
 
+/// Something happened.
 #[derive(Debug)]
 pub enum ClientEvent {
+    /// The client has been started.
     Started,
+    /// The client has started connecting to the room.
     Connecting,
+    /// The client has established a connection to the room.
     Connected {
+        /// The connection.
         conn: ClientConnHandle,
+        /// The connection's state at the time of the event.
         state: State,
     },
+    /// The client has joined the room and is ready to talk.
     Joined {
+        /// The connection.
         conn: ClientConnHandle,
+        /// The connection's state at the time of the event.
         state: State,
     },
+    /// The client has received a packet from the server.
     Packet {
+        /// The connection.
         conn: ClientConnHandle,
+        /// The connection's state at the time of the event.
         state: State,
+        /// The received packet.
         packet: ParsedPacket,
     },
+    /// The client has disconnected from the room.
+    ///
+    /// For this event to fire, [`Self::Connected`] must have fired beforehand;
+    /// [`Self::Connecting`] alone is not sufficient.
     Disconnected,
+    /// The client has been stopped.
     Stopped,
 }
 
@@ -288,6 +306,15 @@ impl ClientTask {
     }
 }
 
+/// A persistent session in a room.
+///
+/// A [`Client`] represents a single session in a room that may span multiple
+/// connections. It reconnects when it loses connection, authenticates when
+/// required, and sets its nick upon (re-)joining.
+///
+/// While running, it emits events when something happens. The events can be
+/// associated with the client using a unique ID (which you can just ignore if
+/// you don't need it).
 #[derive(Clone)]
 pub struct Client {
     id: usize,
@@ -305,6 +332,9 @@ impl fmt::Debug for Client {
 }
 
 impl Client {
+    /// Create a new client.
+    ///
+    /// The client will report events to the provided mpsc queue.
     pub fn new(
         id: usize,
         config: ClientConfig,
@@ -335,26 +365,32 @@ impl Client {
         }
     }
 
+    /// The client's unique ID.
     pub fn id(&self) -> usize {
         self.id
     }
 
+    /// The client's config.
     pub fn config(&self) -> &ClientConfig {
         &self.config
     }
 
+    /// The time the client was created.
     pub fn start_time(&self) -> Timestamp {
         self.start_time
     }
 
+    /// Whether the client has stopped.
     pub fn stopped(&self) -> bool {
         self.cmd_tx.is_closed()
     }
 
+    /// Stop the client.
     pub async fn stop(&self) {
         let _ = self.cmd_tx.send(Command::Stop).await;
     }
 
+    /// Get a handle to the client's connection, if it is currently connected.
     pub async fn handle(&self) -> Option<ClientConnHandle> {
         let (tx, rx) = oneshot::channel();
         let _ = self.cmd_tx.send(Command::GetConn(tx)).await;
@@ -367,10 +403,12 @@ impl Client {
 /////////////
 
 impl Client {
+    /// Create a builder with the default [`ServerConfig`].
     pub fn builder(room: impl ToString) -> ClientBuilder<()> {
         Self::builder_for_server(ServerConfig::default(), room)
     }
 
+    /// Create a builder for [`Client`]s.
     pub fn builder_for_server(server: ServerConfig, room: impl ToString) -> ClientBuilder<()> {
         ClientBuilder {
             base: (),
@@ -380,6 +418,7 @@ impl Client {
 }
 
 impl ClientBuilder<()> {
+    /// Build a client.
     pub fn build(self, id: usize, event_tx: mpsc::Sender<(usize, ClientEvent)>) -> Client {
         Client::new(id, self.config, event_tx)
     }

@@ -73,6 +73,7 @@ impl ClientsTask {
     }
 }
 
+/// A collection of multiple [`Client`]s.
 #[derive(Clone)]
 pub struct Clients {
     config: Arc<ClientsConfig>,
@@ -81,10 +82,16 @@ pub struct Clients {
 }
 
 impl Clients {
+    /// Create a new client collection with default config.
+    ///
+    /// The clients will report events to the provided mpsc queue.
     pub fn new(event_tx: mpsc::Sender<(Client, ClientEvent)>) -> Self {
         Self::new_with_config(ClientsConfig::default(), event_tx)
     }
 
+    /// Create a new client collection.
+    ///
+    /// The clients will report events to the provided mpsc queue.
     pub fn new_with_config(
         config: ClientsConfig,
         event_tx: mpsc::Sender<(Client, ClientEvent)>,
@@ -115,20 +122,26 @@ impl Clients {
         }
     }
 
+    /// The client collection's config.
     pub fn config(&self) -> &ClientsConfig {
         &self.config
     }
 
+    /// The time the client collection was created.
     pub fn start_time(&self) -> Timestamp {
         self.start_time
     }
 
+    /// Get all currently active clients.
     pub async fn get_clients(&self) -> Vec<Client> {
         let (tx, rx) = oneshot::channel();
         let _ = self.cmd_tx.send(Command::GetClients(tx)).await;
         rx.await.expect("task should still be running")
     }
 
+    /// Add a new client to the collection.
+    ///
+    /// The client must have a unique ID.
     pub async fn add_client(&self, config: ClientConfig) -> Client {
         let (tx, rx) = oneshot::channel();
         let _ = self.cmd_tx.send(Command::AddClient(config, tx)).await;
@@ -141,6 +154,7 @@ impl Clients {
 /////////////
 
 impl Clients {
+    /// Create a builder for a new client.
     pub fn client_builder(&self, room: impl ToString) -> ClientBuilder<&Self> {
         ClientBuilder {
             base: self,
@@ -150,6 +164,8 @@ impl Clients {
 }
 
 impl ClientBuilder<&Clients> {
+    /// Build a client and add it to the client collection the builder was
+    /// created from.
     pub async fn build_and_add(self) -> Client {
         self.base.add_client(self.config).await
     }
