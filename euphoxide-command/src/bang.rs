@@ -5,16 +5,11 @@ use euphoxide::{api::Message, nick};
 
 use super::{Command, Context, Info, Propagate};
 
-// TODO Don't ignore leading whitespace?
-// I'm not entirely happy with how commands handle whitespace, and on euphoria,
-// prefixing commands with whitespace is traditionally used to not trigger them.
-
-/// Parse leading whitespace followed by an prefix-initiated command.
+/// Parse a prefix-initiated command.
 ///
 /// Returns the command name and the remaining text with one leading whitespace
 /// removed. The remaining text may be the empty string.
 pub fn parse_prefix_initiated<'a>(text: &'a str, prefix: &str) -> Option<(&'a str, &'a str)> {
-    let text = text.trim_start();
     let text = text.strip_prefix(prefix)?;
     let (name, rest) = text.split_once(char::is_whitespace).unwrap_or((text, ""));
     if name.is_empty() {
