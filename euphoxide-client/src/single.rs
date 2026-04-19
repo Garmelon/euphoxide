@@ -353,7 +353,7 @@ impl Client {
 
         let config = Arc::new(config);
 
-        let (cmd_tx, cmd_rx) = mpsc::channel(config.server.cmd_channel_bufsize);
+        let (cmd_tx, cmd_rx) = mpsc::channel(1);
 
         let task = ClientTask {
             id,

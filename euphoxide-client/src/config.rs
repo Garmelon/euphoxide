@@ -13,7 +13,6 @@ pub struct ServerConfig {
     pub cookies: Arc<Mutex<CookieJar>>,
     pub join_attempts: usize,
     pub reconnect_delay: Duration,
-    pub cmd_channel_bufsize: usize,
 }
 
 impl Default for ServerConfig {
@@ -23,7 +22,6 @@ impl Default for ServerConfig {
             cookies: Arc::new(Mutex::new(CookieJar::new())),
             join_attempts: 5,
             reconnect_delay: Duration::from_secs(30),
-            cmd_channel_bufsize: 1,
         }
     }
 }
@@ -56,7 +54,6 @@ impl ClientConfig {
 #[non_exhaustive]
 pub struct MultiClientConfig {
     pub server: ServerConfig,
-    pub cmd_channel_bufsize: usize,
     pub event_channel_bufsize: usize,
 }
 
@@ -64,7 +61,6 @@ impl Default for MultiClientConfig {
     fn default() -> Self {
         Self {
             server: ServerConfig::default(),
-            cmd_channel_bufsize: 1,
             event_channel_bufsize: 10,
         }
     }

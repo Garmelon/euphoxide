@@ -177,7 +177,7 @@ impl MultiClient {
         let config = Arc::new(config);
         let out_tx = event_tx;
 
-        let (cmd_tx, cmd_rx) = mpsc::channel(config.cmd_channel_bufsize);
+        let (cmd_tx, cmd_rx) = mpsc::channel(1);
         let (event_tx, event_rx) = mpsc::channel(config.event_channel_bufsize);
 
         let task = MultiClientTask {
