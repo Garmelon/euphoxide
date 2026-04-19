@@ -5,8 +5,8 @@ use euphoxide::api::Message;
 use jiff::{Span, Timestamp, Unit};
 
 #[cfg(feature = "clap")]
-use crate::command::clap::ClapCommand;
-use crate::command::{Command, Context, Propagate};
+use crate::clap::ClapCommand;
+use crate::{Command, Context, Propagate};
 
 pub fn format_time(t: Timestamp) -> String {
     t.strftime("%Y-%m-%d %H:%M:%S UTC").to_string()

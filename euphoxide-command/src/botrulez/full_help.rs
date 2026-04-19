@@ -4,8 +4,8 @@ use clap::Parser;
 use euphoxide::api::Message;
 
 #[cfg(feature = "clap")]
-use crate::command::clap::ClapCommand;
-use crate::command::{Command, Context, Propagate};
+use crate::clap::ClapCommand;
+use crate::{Command, Context, Propagate};
 
 #[derive(Default)]
 pub struct FullHelp {

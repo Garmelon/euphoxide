@@ -1,8 +1,8 @@
 //! API bindings for [euphoria.leet.nu](https://euphoria.leet.nu/).
 //!
 //! If you want to write a generic client, see the `euphoxide-client` crate for
-//! connection management. If you want to write a bot, the `euphoxide-bot` crate
-//! contains additional useful tools.
+//! connection management. If you want to write a bot, the command framework in
+//! the `euphoxide-command` crate may prove useful.
 //!
 //! See also the [euphoria.leet.nu API docs](https://euphoria.leet.nu/heim/api)
 //! and [heim](https://github.com/CylonicRaider/heim), the software underlying euphoria.

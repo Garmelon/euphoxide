@@ -4,25 +4,19 @@ use clap::Parser;
 use euphoxide::api::Message;
 
 #[cfg(feature = "clap")]
-use crate::command::clap::ClapCommand;
-use crate::command::{Command, Context, Propagate};
+use crate::clap::ClapCommand;
+use crate::{Command, Context, Propagate};
 
-pub struct Ping(pub String);
+pub struct ShortHelp(pub String);
 
-impl Ping {
-    pub fn new<S: ToString>(reply: S) -> Self {
-        Self(reply.to_string())
-    }
-}
-
-impl Default for Ping {
-    fn default() -> Self {
-        Self::new("Pong!")
+impl ShortHelp {
+    pub fn new<S: ToString>(text: S) -> Self {
+        Self(text.to_string())
     }
 }
 
 #[async_trait]
-impl<E> Command<E> for Ping
+impl<E> Command<E> for ShortHelp
 where
     E: From<euphoxide::Error>,
 {
@@ -36,18 +30,18 @@ where
     }
 }
 
-/// Trigger a short reply.
+/// Show short bot help.
 #[cfg(feature = "clap")]
 #[derive(Parser)]
-pub struct PingArgs {}
+pub struct ShortHelpArgs {}
 
 #[cfg(feature = "clap")]
 #[async_trait]
-impl<E> ClapCommand<E> for Ping
+impl<E> ClapCommand<E> for ShortHelp
 where
     E: From<euphoxide::Error>,
 {
-    type Args = PingArgs;
+    type Args = ShortHelpArgs;
 
     async fn execute(
         &self,

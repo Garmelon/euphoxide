@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 use euphoxide::api::Message;
-use euphoxide_bot::{
+use euphoxide_client::Clients;
+use euphoxide_command::{
     CommandExt, Commands, Context, Propagate,
     basic::FromHandler,
     botrulez::{FullHelp, Ping, ShortHelp},
     clap::FromClapHandler,
 };
-use euphoxide_client::Clients;
 use log::error;
 use tokio::sync::mpsc;
 
