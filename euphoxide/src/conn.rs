@@ -11,13 +11,13 @@ use tokio::{
     time::{self, Instant},
 };
 use tokio_tungstenite::{
-    tungstenite::{client::IntoClientRequest, handshake::client::Response, Message},
     MaybeTlsStream, WebSocketStream,
+    tungstenite::{Message, client::IntoClientRequest, handshake::client::Response},
 };
 
 use crate::{
-    api::{Data, Packet, PacketType, ParsedPacket, Ping, PingEvent, PingReply, Time},
     Error, Result,
+    api::{Data, Packet, PacketType, ParsedPacket, Ping, PingEvent, PingReply, Time},
 };
 
 /// Which side of the connection we're on.

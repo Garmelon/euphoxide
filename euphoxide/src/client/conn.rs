@@ -9,14 +9,14 @@ use tokio::{
 };
 use tokio_tungstenite::tungstenite::{
     client::IntoClientRequest,
-    http::{header, HeaderValue},
+    http::{HeaderValue, header},
 };
 
 use crate::{
+    Error, Result,
     api::{Command, Data, LoginReply, ParsedPacket},
     conn::{Conn, ConnConfig, Side},
     replies::{self, PendingReply, Replies},
-    Error, Result,
 };
 
 use super::state::State;

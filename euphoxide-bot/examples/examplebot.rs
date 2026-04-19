@@ -2,10 +2,10 @@ use std::time::Duration;
 
 use euphoxide::api::Message;
 use euphoxide_bot::{
+    CommandExt, Commands, Context, Propagate,
     basic::FromHandler,
     botrulez::{FullHelp, Ping, ShortHelp},
     clap::FromClapHandler,
-    CommandExt, Commands, Context, Propagate,
 };
 use euphoxide_client::MultiClient;
 use log::error;

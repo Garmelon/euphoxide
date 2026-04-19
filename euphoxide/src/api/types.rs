@@ -5,7 +5,7 @@
 use std::{error, fmt, num::ParseIntError, str::FromStr};
 
 use jiff::Timestamp;
-use serde::{de, ser, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de, ser};
 use serde_json::Value;
 
 /// Describes an account and its preferred name.
