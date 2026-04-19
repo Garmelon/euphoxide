@@ -90,8 +90,7 @@ impl Info {
     }
 
     pub fn prepend_trigger(&mut self, trigger: impl ToString) {
-        // TODO Use get_or_instert_default when updating MSRV
-        let cur_trigger = self.trigger.get_or_insert_with(String::new);
+        let cur_trigger = self.trigger.get_or_insert_default();
         if !cur_trigger.is_empty() {
             cur_trigger.insert(0, ' ');
         }

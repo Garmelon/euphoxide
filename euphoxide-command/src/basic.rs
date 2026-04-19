@@ -101,8 +101,6 @@ where
 // Black type magic, thanks a lot to https://github.com/kpreid and the
 // async_fn_traits crate!
 
-// TODO Simplify all this once AsyncFn becomes stable
-
 pub trait HandlerFn<'a0, 'a1, 'a2, E>:
     Fn(&'a0 str, &'a1 Message, &'a2 Context<E>) -> Self::Future
 where

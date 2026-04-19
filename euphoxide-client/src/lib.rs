@@ -8,7 +8,6 @@
 //!
 //! To get started, create a [`Client`] or [`Clients`].
 
-// TODO Move to workspace Cargo.toml
 #![warn(missing_docs)]
 
 mod builder;

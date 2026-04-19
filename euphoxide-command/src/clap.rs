@@ -138,8 +138,6 @@ where
     }
 }
 
-// TODO Simplify all this once AsyncFn becomes stable
-
 pub trait ClapHandlerFn<'a0, 'a1, A, E>:
     Fn(A, &'a0 Message, &'a1 Context<E>) -> Self::Future
 where
