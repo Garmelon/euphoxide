@@ -2,7 +2,6 @@
 name = "euphoxide-bot"
 version = { workspace = true }
 edition = { workspace = true }
-rust-version = { workspace = true }
 
 [features]
 clap = ["dep:clap"]
