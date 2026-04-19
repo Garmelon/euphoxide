@@ -4,7 +4,7 @@ use euphoxide::{
     api::{Data, Message, Nick, Send},
     client::ClientConnHandle,
 };
-use euphoxide_client::{MultiClient, MultiClientEvent};
+use euphoxide_client::{ClientEvent, MultiClient};
 use tokio::sync::mpsc;
 
 async fn set_nick(conn: &ClientConnHandle) -> anyhow::Result<()> {
@@ -83,8 +83,8 @@ async fn run() -> anyhow::Result<()> {
         .build_and_add()
         .await;
 
-    while let Some(event) = event_rx.recv().await {
-        if let MultiClientEvent::Packet { conn, packet, .. } = event {
+    while let Some((_, event)) = event_rx.recv().await {
+        if let ClientEvent::Packet { conn, packet, .. } = event {
             let data = packet.into_data()?;
             tokio::task::spawn(on_data(conn, data));
         }

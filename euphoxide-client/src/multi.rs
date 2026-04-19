@@ -1,9 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
 
-use euphoxide::{
-    api::ParsedPacket,
-    client::{ClientConnHandle, State},
-};
 use jiff::Timestamp;
 use tokio::{
     select,
@@ -11,82 +7,6 @@ use tokio::{
 };
 
 use crate::{Client, ClientBuilder, ClientConfig, ClientEvent, MultiClientConfig};
-
-#[derive(Debug)]
-pub enum MultiClientEvent {
-    Started {
-        client: Client,
-    },
-    Connecting {
-        client: Client,
-    },
-    Connected {
-        client: Client,
-        conn: ClientConnHandle,
-        state: State,
-    },
-    Joined {
-        client: Client,
-        conn: ClientConnHandle,
-        state: State,
-    },
-    Packet {
-        client: Client,
-        conn: ClientConnHandle,
-        state: State,
-        packet: ParsedPacket,
-    },
-    Disconnected {
-        client: Client,
-    },
-    Stopped {
-        client: Client,
-    },
-}
-
-impl MultiClientEvent {
-    fn from_client_event(client: Client, event: ClientEvent) -> Self {
-        match event {
-            ClientEvent::Started { id: _ } => Self::Started { client },
-            ClientEvent::Connecting { id: _ } => Self::Connecting { client },
-            ClientEvent::Connected { id: _, conn, state } => Self::Connected {
-                client,
-                conn,
-                state,
-            },
-            ClientEvent::Joined { id: _, conn, state } => Self::Joined {
-                client,
-                conn,
-                state,
-            },
-            ClientEvent::Packet {
-                id: _,
-                conn,
-                state,
-                packet,
-            } => Self::Packet {
-                client,
-                conn,
-                state,
-                packet,
-            },
-            ClientEvent::Disconnected { id: _ } => Self::Disconnected { client },
-            ClientEvent::Stopped { id: _ } => Self::Stopped { client },
-        }
-    }
-
-    pub fn client(&self) -> &Client {
-        match self {
-            Self::Started { client } => client,
-            Self::Connecting { client, .. } => client,
-            Self::Connected { client, .. } => client,
-            Self::Joined { client, .. } => client,
-            Self::Packet { client, .. } => client,
-            Self::Disconnected { client } => client,
-            Self::Stopped { client } => client,
-        }
-    }
-}
 
 enum Command {
     GetClients(oneshot::Sender<Vec<Client>>),
@@ -98,9 +18,9 @@ struct MultiClientTask {
     clients: HashMap<usize, Client>,
 
     cmd_rx: mpsc::Receiver<Command>,
-    event_rx: mpsc::Receiver<ClientEvent>,
-    event_tx: mpsc::Sender<ClientEvent>,
-    out_tx: mpsc::Sender<MultiClientEvent>,
+    event_rx: mpsc::Receiver<(usize, ClientEvent)>,
+    event_tx: mpsc::Sender<(usize, ClientEvent)>,
+    out_tx: mpsc::Sender<(Client, ClientEvent)>,
 }
 
 impl MultiClientTask {
@@ -108,10 +28,9 @@ impl MultiClientTask {
         self.clients.retain(|_, v| !v.stopped());
     }
 
-    async fn on_event(&self, event: ClientEvent) {
-        if let Some(client) = self.clients.get(&event.id()) {
-            let event = MultiClientEvent::from_client_event(client.clone(), event);
-            let _ = self.out_tx.send(event).await;
+    async fn on_event(&self, client_id: usize, event: ClientEvent) {
+        if let Some(client) = self.clients.get(&client_id) {
+            let _ = self.out_tx.send((client.clone(), event)).await;
         }
     }
 
@@ -146,7 +65,7 @@ impl MultiClientTask {
 
             match received {
                 Ok(None) => break,
-                Ok(Some(event)) => self.on_event(event).await,
+                Ok(Some((client_id, event))) => self.on_event(client_id, event).await,
                 Err(None) => break,
                 Err(Some(cmd)) => self.on_cmd(cmd).await,
             }
@@ -162,13 +81,13 @@ pub struct MultiClient {
 }
 
 impl MultiClient {
-    pub fn new(event_tx: mpsc::Sender<MultiClientEvent>) -> Self {
+    pub fn new(event_tx: mpsc::Sender<(Client, ClientEvent)>) -> Self {
         Self::new_with_config(MultiClientConfig::default(), event_tx)
     }
 
     pub fn new_with_config(
         config: MultiClientConfig,
-        event_tx: mpsc::Sender<MultiClientEvent>,
+        event_tx: mpsc::Sender<(Client, ClientEvent)>,
     ) -> Self {
         let start_time = Timestamp::now();
 

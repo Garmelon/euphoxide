@@ -89,11 +89,11 @@ async fn main() {
         .build_and_add()
         .await;
 
-    while let Some(event) = event_rx.recv().await {
+    while let Some((client, event)) = event_rx.recv().await {
         let commands = commands.clone();
         let clients = clients.clone();
         tokio::task::spawn(async move {
-            if let Err(err) = commands.handle_event(clients, event).await {
+            if let Err(err) = commands.handle_event(clients, client, event).await {
                 error!("Oops: {err}")
             }
         });

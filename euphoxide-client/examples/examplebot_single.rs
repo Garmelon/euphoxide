@@ -79,7 +79,7 @@ async fn run() -> anyhow::Result<()> {
         .with_username("examplebot")
         .build(0, event_tx);
 
-    while let Some(event) = event_rx.recv().await {
+    while let Some((_, event)) = event_rx.recv().await {
         if let ClientEvent::Packet { conn, packet, .. } = event {
             let data = packet.into_data()?;
             tokio::task::spawn(on_data(conn, data));

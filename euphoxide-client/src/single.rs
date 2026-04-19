@@ -71,48 +71,23 @@ enum Command {
 
 #[derive(Debug)]
 pub enum ClientEvent {
-    Started {
-        id: usize,
-    },
-    Connecting {
-        id: usize,
-    },
+    Started,
+    Connecting,
     Connected {
-        id: usize,
         conn: ClientConnHandle,
         state: State,
     },
     Joined {
-        id: usize,
         conn: ClientConnHandle,
         state: State,
     },
     Packet {
-        id: usize,
         conn: ClientConnHandle,
         state: State,
         packet: ParsedPacket,
     },
-    Disconnected {
-        id: usize,
-    },
-    Stopped {
-        id: usize,
-    },
-}
-
-impl ClientEvent {
-    pub fn id(&self) -> usize {
-        match self {
-            Self::Started { id } => *id,
-            Self::Connecting { id } => *id,
-            Self::Connected { id, .. } => *id,
-            Self::Joined { id, .. } => *id,
-            Self::Packet { id, .. } => *id,
-            Self::Disconnected { id } => *id,
-            Self::Stopped { id } => *id,
-        }
-    }
+    Disconnected,
+    Stopped,
 }
 
 struct ClientTask {
@@ -120,7 +95,7 @@ struct ClientTask {
     config: Arc<ClientConfig>,
 
     cmd_rx: mpsc::Receiver<Command>,
-    event_tx: mpsc::Sender<ClientEvent>,
+    event_tx: mpsc::Sender<(usize, ClientEvent)>,
 
     attempts: usize,
     never_joined: bool,
@@ -168,26 +143,20 @@ impl ClientTask {
     async fn on_joined(&mut self, conn: &ClientConn) {
         self.never_joined = false;
 
-        let _ = self
-            .event_tx
-            .send(ClientEvent::Joined {
-                id: self.id,
-                conn: conn.handle(),
-                state: conn.state().clone(),
-            })
-            .await;
+        let event = ClientEvent::Joined {
+            conn: conn.handle(),
+            state: conn.state().clone(),
+        };
+        let _ = self.event_tx.send((self.id, event)).await;
     }
 
     async fn on_packet(&mut self, conn: &mut ClientConn, packet: ParsedPacket) -> Result<()> {
-        let _ = self
-            .event_tx
-            .send(ClientEvent::Packet {
-                id: self.id,
-                conn: conn.handle(),
-                state: conn.state().clone(),
-                packet: packet.clone(),
-            })
-            .await;
+        let event = ClientEvent::Packet {
+            conn: conn.handle(),
+            state: conn.state().clone(),
+            packet: packet.clone(),
+        };
+        let _ = self.event_tx.send((self.id, event)).await;
 
         match packet.into_data()? {
             // Attempting to authenticate
@@ -257,10 +226,7 @@ impl ClientTask {
             return Err(Error::OutOfJoinAttempts);
         }
 
-        let _ = self
-            .event_tx
-            .send(ClientEvent::Connecting { id: self.id })
-            .await;
+        let _ = self.event_tx.send((self.id, ClientEvent::Connecting)).await;
 
         let mut conn = match self.connect().await {
             Ok(conn) => conn,
@@ -276,14 +242,11 @@ impl ClientTask {
             }
         };
 
-        let _ = self
-            .event_tx
-            .send(ClientEvent::Connected {
-                id: self.id,
-                conn: conn.handle(),
-                state: conn.state().clone(),
-            })
-            .await;
+        let event = ClientEvent::Connected {
+            conn: conn.handle(),
+            state: conn.state().clone(),
+        };
+        let _ = self.event_tx.send((self.id, event)).await;
 
         let result = loop {
             let received = select! {
@@ -303,17 +266,14 @@ impl ClientTask {
 
         let _ = self
             .event_tx
-            .send(ClientEvent::Disconnected { id: self.id })
+            .send((self.id, ClientEvent::Disconnected))
             .await;
 
         result
     }
 
     async fn run(mut self) {
-        let _ = self
-            .event_tx
-            .send(ClientEvent::Started { id: self.id })
-            .await;
+        let _ = self.event_tx.send((self.id, ClientEvent::Started)).await;
 
         loop {
             if let Err(err) = self.run_once().await {
@@ -324,10 +284,7 @@ impl ClientTask {
             }
         }
 
-        let _ = self
-            .event_tx
-            .send(ClientEvent::Stopped { id: self.id })
-            .await;
+        let _ = self.event_tx.send((self.id, ClientEvent::Stopped)).await;
     }
 }
 
@@ -348,7 +305,11 @@ impl fmt::Debug for Client {
 }
 
 impl Client {
-    pub fn new(id: usize, config: ClientConfig, event_tx: mpsc::Sender<ClientEvent>) -> Self {
+    pub fn new(
+        id: usize,
+        config: ClientConfig,
+        event_tx: mpsc::Sender<(usize, ClientEvent)>,
+    ) -> Self {
         let start_time = Timestamp::now();
 
         let config = Arc::new(config);
@@ -419,7 +380,7 @@ impl Client {
 }
 
 impl ClientBuilder<()> {
-    pub fn build(self, id: usize, event_tx: mpsc::Sender<ClientEvent>) -> Client {
+    pub fn build(self, id: usize, event_tx: mpsc::Sender<(usize, ClientEvent)>) -> Client {
         Client::new(id, self.config, event_tx)
     }
 }

@@ -11,7 +11,7 @@ use euphoxide::{
     api::{self, Data, Message, MessageId, SendEvent, SendReply},
     client::{ClientConnHandle, Joined, State},
 };
-use euphoxide_client::{Client, MultiClient, MultiClientEvent};
+use euphoxide_client::{Client, ClientEvent, MultiClient};
 
 use self::{
     bang::{General, Global, Specific},
@@ -221,10 +221,10 @@ impl<E> Commands<E> {
     pub async fn handle_event(
         self: Arc<Self>,
         clients: MultiClient,
-        event: MultiClientEvent,
+        client: Client,
+        event: ClientEvent,
     ) -> Result<Propagate, E> {
-        let MultiClientEvent::Packet {
-            client,
+        let ClientEvent::Packet {
             conn,
             state,
             packet,
