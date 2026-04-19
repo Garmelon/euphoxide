@@ -1,10 +1,10 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = ["euphoxide", "euphoxide-bot", "euphoxide-client"]
 
 [workspace.package]
 version = "0.6.1"
-edition = "2021"
+edition = "2024"
 
 [workspace.dependencies]
 async-trait = "0.1.83"
