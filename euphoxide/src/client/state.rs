@@ -160,26 +160,24 @@ impl Joined {
                 debug!("Updating listing after part-event");
                 self.listing.remove(&p.0.session_id);
             }
-            Data::NetworkEvent(p) => {
-                if p.r#type == "partition" {
-                    debug!("Updating listing after network-event with type partition");
-                    self.listing.retain(|_, s| match s {
-                        SessionInfo::Full(s) => {
-                            s.server_id != p.server_id && s.server_era != p.server_era
-                        }
-                        // We can't know if the session was disconnected by the
-                        // partition or not, so we're erring on the side of
-                        // caution and assuming they were kicked. If we're
-                        // wrong, we'll re-add the session as soon as it
-                        // performs another visible action.
-                        //
-                        // If we always kept such sessions, we might keep
-                        // disconnected ones indefinitely, thereby keeping them
-                        // from moving on, instead forever tethering them to the
-                        // digital realm.
-                        SessionInfo::Partial(_) => false,
-                    });
-                }
+            Data::NetworkEvent(p) if p.r#type == "partition" => {
+                debug!("Updating listing after network-event with type partition");
+                self.listing.retain(|_, s| match s {
+                    SessionInfo::Full(s) => {
+                        s.server_id != p.server_id && s.server_era != p.server_era
+                    }
+                    // We can't know if the session was disconnected by the
+                    // partition or not, so we're erring on the side of
+                    // caution and assuming they were kicked. If we're
+                    // wrong, we'll re-add the session as soon as it
+                    // performs another visible action.
+                    //
+                    // If we always kept such sessions, we might keep
+                    // disconnected ones indefinitely, thereby keeping them
+                    // from moving on, instead forever tethering them to the
+                    // digital realm.
+                    SessionInfo::Partial(_) => false,
+                });
             }
             Data::SendEvent(p) => {
                 debug!("Updating listing after send-event");
@@ -222,7 +220,6 @@ impl Joined {
 
 /// The state of a connection to the server, from a client's perspective.
 #[derive(Debug, Clone)]
-#[allow(clippy::large_enum_variant)]
 pub enum State {
     /// The client has not joined the room yet.
     Joining(Joining),

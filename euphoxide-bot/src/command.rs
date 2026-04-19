@@ -111,8 +111,8 @@ pub enum Propagate {
     Yes,
 }
 
-#[allow(unused_variables)]
 #[async_trait]
+#[expect(unused_variables)]
 pub trait Command<E = euphoxide::Error> {
     fn info(&self, ctx: &Context<E>) -> Info {
         Info::default()

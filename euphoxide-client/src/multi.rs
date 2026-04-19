@@ -90,7 +90,6 @@ impl MultiClientEvent {
     }
 }
 
-#[allow(clippy::large_enum_variant)]
 enum Command {
     GetClients(oneshot::Sender<Vec<Client>>),
     AddClient(ClientConfig, oneshot::Sender<Client>),
