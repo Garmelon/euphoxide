@@ -1,6 +1,6 @@
 //! Client-specific connection with a more expressive API.
 
-use std::{future::Future, time::Duration};
+use std::time::Duration;
 
 use log::debug;
 use tokio::{

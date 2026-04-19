@@ -1,6 +1,6 @@
 //! [`clap`]-based commands.
 
-use std::{future::Future, marker::PhantomData};
+use std::marker::PhantomData;
 
 use async_trait::async_trait;
 use clap::{CommandFactory, Parser};

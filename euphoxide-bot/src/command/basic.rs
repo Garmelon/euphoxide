@@ -1,7 +1,5 @@
 //! Basic command wrappers.
 
-use std::future::Future;
-
 use async_trait::async_trait;
 use euphoxide::api::Message;
 

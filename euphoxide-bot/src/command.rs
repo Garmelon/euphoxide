@@ -4,7 +4,7 @@ pub mod botrulez;
 #[cfg(feature = "clap")]
 pub mod clap;
 
-use std::{future::Future, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use euphoxide::{

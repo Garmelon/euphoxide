@@ -144,10 +144,10 @@ impl ClientTask {
     fn set_cookies(&mut self, cookies: &[HeaderValue]) {
         let mut guard = self.config.server.cookies.lock().unwrap();
         for cookie in cookies {
-            if let Ok(cookie) = cookie.to_str() {
-                if let Ok(cookie) = Cookie::from_str(cookie) {
-                    guard.add(cookie);
-                }
+            if let Ok(cookie) = cookie.to_str()
+                && let Ok(cookie) = Cookie::from_str(cookie)
+            {
+                guard.add(cookie);
             }
         }
     }
@@ -211,13 +211,13 @@ impl ClientTask {
 
             // Just joined
             Data::SnapshotEvent(ev) => {
-                if let Some(username) = &self.config.username {
-                    if ev.nick.is_none() || self.config.force_username {
-                        conn.send(Nick {
-                            name: username.clone(),
-                        })
-                        .await?;
-                    }
+                if let Some(username) = &self.config.username
+                    && (ev.nick.is_none() || self.config.force_username)
+                {
+                    conn.send(Nick {
+                        name: username.clone(),
+                    })
+                    .await?;
                 }
 
                 // Maybe we should only count this as joining if we successfully
