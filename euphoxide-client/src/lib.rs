@@ -1,6 +1,6 @@
 mod builder;
+mod client;
+mod clients;
 mod config;
-mod multi;
-mod single;
 
-pub use self::{builder::*, config::*, multi::*, single::*};
+pub use self::{builder::*, client::*, clients::*, config::*};
