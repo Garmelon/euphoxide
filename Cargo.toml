@@ -7,21 +7,21 @@ version = "0.6.1"
 edition = "2024"
 
 [workspace.dependencies]
-async-trait = "0.1.83"
-caseless = "0.2.1"
-clap = { version = "4.5.23", default-features = false, features = ["std"] }
+async-trait = "0.1.89"
+caseless = "0.2.2"
+clap = { version = "4.6.1", default-features = false, features = ["std"] }
 cookie = "0.18.1"
-futures-util = "0.3.31"
-jiff = { version = "0.1.15", default-features = false, features = ["std"] }
-log = "0.4.22"
-serde = "1.0.215"
-serde_json = "1.0.133"
-tokio = "1.42.0"
+futures-util = "0.3.32"
+jiff = { version = "0.2.23", default-features = false, features = ["std"] }
+log = "0.4.29"
+serde = "1.0.228"
+serde_json = "1.0.149"
+tokio = "1.52.1"
 tokio-tungstenite = "0.24.0"
-unicode-normalization = "0.1.24"
+unicode-normalization = "0.1.25"
 # For examples
-anyhow = "1.0.94"
-rustls = "0.23.19"
+anyhow = "1.0.102"
+rustls = "0.23.38"
 # In this workspace
 euphoxide = { path = "./euphoxide" }
 euphoxide-bot = { path = "./euphoxide-bot" }
