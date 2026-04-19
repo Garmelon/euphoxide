@@ -16,7 +16,7 @@ use tokio_tungstenite::tungstenite::{
     http::{HeaderValue, StatusCode},
 };
 
-use crate::{ClientBuilder, ClientBuilderBase, ClientConfig, ServerConfig};
+use crate::{ClientBuilder, ClientConfig, ServerConfig};
 
 enum Error {
     Stopped,
@@ -405,19 +405,12 @@ impl Client {
 // Builder //
 /////////////
 
-impl ClientBuilderBase<'static> for Client {
-    type Base = ();
-}
-
 impl Client {
-    pub fn builder(room: impl ToString) -> ClientBuilder<'static, Self> {
+    pub fn builder(room: impl ToString) -> ClientBuilder<()> {
         Self::builder_for_server(ServerConfig::default(), room)
     }
 
-    pub fn builder_for_server(
-        server: ServerConfig,
-        room: impl ToString,
-    ) -> ClientBuilder<'static, Self> {
+    pub fn builder_for_server(server: ServerConfig, room: impl ToString) -> ClientBuilder<()> {
         ClientBuilder {
             base: (),
             config: ClientConfig::new(server, room.to_string()),
@@ -425,7 +418,7 @@ impl Client {
     }
 }
 
-impl ClientBuilder<'static, Client> {
+impl ClientBuilder<()> {
     pub fn build(self, id: usize, event_tx: mpsc::Sender<ClientEvent>) -> Client {
         Client::new(id, self.config, event_tx)
     }

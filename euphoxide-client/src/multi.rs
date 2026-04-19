@@ -10,9 +10,7 @@ use tokio::{
     sync::{mpsc, oneshot},
 };
 
-use crate::{
-    Client, ClientBuilder, ClientBuilderBase, ClientConfig, ClientEvent, MultiClientConfig,
-};
+use crate::{Client, ClientBuilder, ClientConfig, ClientEvent, MultiClientConfig};
 
 #[derive(Debug)]
 pub enum MultiClientEvent {
@@ -223,12 +221,8 @@ impl MultiClient {
 // Builder //
 /////////////
 
-impl<'a> ClientBuilderBase<'a> for MultiClient {
-    type Base = &'a Self;
-}
-
 impl MultiClient {
-    pub fn client_builder(&self, room: impl ToString) -> ClientBuilder<'_, Self> {
+    pub fn client_builder(&self, room: impl ToString) -> ClientBuilder<&Self> {
         ClientBuilder {
             base: self,
             config: ClientConfig::new(self.config.server.clone(), room.to_string()),
@@ -236,7 +230,7 @@ impl MultiClient {
     }
 }
 
-impl ClientBuilder<'_, MultiClient> {
+impl ClientBuilder<&MultiClient> {
     pub async fn build_and_add(self) -> Client {
         self.base.add_client(self.config).await
     }

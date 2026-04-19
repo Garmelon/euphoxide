@@ -1,15 +1,11 @@
 use crate::ClientConfig;
 
-pub trait ClientBuilderBase<'a> {
-    type Base;
-}
-
-pub struct ClientBuilder<'a, B: ClientBuilderBase<'a>> {
-    pub(crate) base: B::Base,
+pub struct ClientBuilder<B> {
+    pub(crate) base: B,
     pub(crate) config: ClientConfig,
 }
 
-impl<'a, B: ClientBuilderBase<'a>> ClientBuilder<'a, B> {
+impl<B> ClientBuilder<B> {
     pub fn config(&self) -> &ClientConfig {
         &self.config
     }
