@@ -12,7 +12,7 @@ use tokio::{
 };
 use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream,
-    tungstenite::{Message, client::IntoClientRequest, handshake::client::Response},
+    tungstenite::{Bytes, Message, client::IntoClientRequest, handshake::client::Response},
 };
 
 use crate::{
@@ -62,7 +62,7 @@ pub struct Conn {
     // unprompted at any time (see RFC 6455 5.5.3). Because of this, we can't
     // just remember the last pong payload.
     last_ping: Instant,
-    last_ws_ping_payload: Option<Vec<u8>>,
+    last_ws_ping_payload: Option<Bytes>,
     last_ws_ping_replied_to: bool,
     last_euph_ping_payload: Option<Time>,
     last_euph_ping_replied_to: bool,
@@ -133,7 +133,7 @@ impl Conn {
     pub async fn send_raw(&mut self, packet: &Packet) -> Result<()> {
         debug!(target: "euphoxide::conn::full", "Sending {packet:?}");
         let text = serde_json::to_string(&packet).map_err(Error::MalformedPacket)?;
-        self.ws.send(Message::Text(text)).await?;
+        self.ws.send(Message::text(text)).await?;
         Ok(())
     }
 
@@ -204,7 +204,8 @@ impl Conn {
         let now = Timestamp::now();
 
         // Send new ws ping
-        let ws_payload = now.as_millisecond().to_be_bytes().to_vec();
+        let ws_payload = now.as_millisecond().to_be_bytes();
+        let ws_payload = Bytes::copy_from_slice(&ws_payload);
         self.last_ws_ping_payload = Some(ws_payload.clone());
         self.last_ws_ping_replied_to = false;
         self.ws.send(Message::Ping(ws_payload)).await?;
