@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use euphoxide::api::Message;
 use euphoxide_client::Clients;
 use euphoxide_command::{
     CommandExt, Commands, Context, Propagate,
@@ -11,17 +10,17 @@ use euphoxide_command::{
 use log::error;
 use tokio::sync::mpsc;
 
-async fn pyramid(_arg: &str, msg: &Message, ctx: &Context) -> euphoxide::Result<Propagate> {
-    let mut parent = msg.id;
+async fn pyramid(_arg: &str, ctx: &Context) -> euphoxide::Result<Propagate> {
+    let mut parent = ctx.msg.id;
 
     for _ in 0..3 {
-        let first = ctx.reply(parent, "brick").await?;
-        ctx.reply_only(parent, "brick").await?;
+        let first = ctx.send(Some(parent), "brick").await?;
+        ctx.send_only(Some(parent), "brick").await?;
         parent = first.await?.0.id;
         tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
-    ctx.reply_only(parent, "brick").await?;
+    ctx.send_only(Some(parent), "brick").await?;
     Ok(Propagate::No)
 }
 
@@ -31,10 +30,10 @@ struct AddArgs {
     rhs: i64,
 }
 
-async fn add(args: AddArgs, msg: &Message, ctx: &Context) -> euphoxide::Result<Propagate> {
+async fn add(args: AddArgs, ctx: &Context) -> euphoxide::Result<Propagate> {
     let result = args.lhs + args.rhs;
 
-    ctx.reply_only(msg.id, format!("{} + {} = {result}", args.lhs, args.rhs))
+    ctx.reply_only(format!("{} + {} = {result}", args.lhs, args.rhs))
         .await?;
 
     Ok(Propagate::No)
