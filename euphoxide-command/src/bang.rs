@@ -46,9 +46,9 @@ where
     C: Command<D, E> + Sync,
 {
     fn info(&self, ctx: &Context<D, E>) -> Info {
-        self.inner
-            .info(ctx)
-            .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
+        let mut info = self.inner.info(ctx);
+        info.prepend_trigger(format!("{}{}", self.prefix, self.name));
+        info
     }
 
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
@@ -92,9 +92,9 @@ where
     C: Command<D, E> + Sync,
 {
     fn info(&self, ctx: &Context<D, E>) -> Info {
-        self.inner
-            .info(ctx)
-            .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
+        let mut info = self.inner.info(ctx);
+        info.prepend_trigger(format!("{}{}", self.prefix, self.name));
+        info
     }
 
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
@@ -146,9 +146,9 @@ where
 {
     fn info(&self, ctx: &Context<D, E>) -> Info {
         let nick = nick::mention(&ctx.joined.session.name);
-        self.inner
-            .info(ctx)
-            .with_prepended_trigger(format!("{}{} @{nick}", self.prefix, self.name))
+        let mut info = self.inner.info(ctx);
+        info.prepend_trigger(format!("{}{} @{nick}", self.prefix, self.name));
+        info
     }
 
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
