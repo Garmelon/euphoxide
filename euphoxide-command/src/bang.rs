@@ -1,7 +1,7 @@
 //! Euphoria-style `!foo` and `!foo @bar` command wrappers.
 
 use async_trait::async_trait;
-use euphoxide::{api::Message, nick};
+use euphoxide::nick;
 
 use super::{Command, Context, Info, Propagate};
 
@@ -50,7 +50,7 @@ where
             .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -59,7 +59,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, msg, ctx).await
+        self.inner.execute(rest, ctx).await
     }
 }
 
@@ -95,7 +95,7 @@ where
             .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -111,7 +111,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, msg, ctx).await
+        self.inner.execute(rest, ctx).await
     }
 }
 
@@ -148,7 +148,7 @@ where
             .with_prepended_trigger(format!("{}{} @{nick}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -165,7 +165,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, msg, ctx).await
+        self.inner.execute(rest, ctx).await
     }
 }
 

@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 #[cfg(feature = "clap")]
 use clap::Parser;
-use euphoxide::api::Message;
 use jiff::{Span, Timestamp, Unit};
 
 #[cfg(feature = "clap")]
@@ -96,10 +95,10 @@ impl<E> Command<E> for Uptime
 where
     E: From<euphoxide::Error>,
 {
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             let reply = self.formulate_reply(ctx, false, false);
-            ctx.reply_only(msg.id, reply).await?;
+            ctx.reply_only(reply).await?;
             Ok(Propagate::No)
         } else {
             Ok(Propagate::Yes)
@@ -127,14 +126,9 @@ where
 {
     type Args = UptimeArgs;
 
-    async fn execute(
-        &self,
-        args: Self::Args,
-        msg: &Message,
-        ctx: &Context<E>,
-    ) -> Result<Propagate, E> {
+    async fn execute(&self, args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E> {
         let reply = self.formulate_reply(ctx, args.present, args.connected);
-        ctx.reply_only(msg.id, reply).await?;
+        ctx.reply_only(reply).await?;
         Ok(Propagate::No)
     }
 }

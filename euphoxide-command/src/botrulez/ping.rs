@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 #[cfg(feature = "clap")]
 use clap::Parser;
-use euphoxide::api::Message;
 
 #[cfg(feature = "clap")]
 use crate::clap::ClapCommand;
@@ -26,9 +25,9 @@ impl<E> Command<E> for Ping
 where
     E: From<euphoxide::Error>,
 {
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
-            ctx.reply_only(msg.id, &self.0).await?;
+            ctx.reply_only(&self.0).await?;
             Ok(Propagate::No)
         } else {
             Ok(Propagate::Yes)
@@ -49,13 +48,8 @@ where
 {
     type Args = PingArgs;
 
-    async fn execute(
-        &self,
-        _args: Self::Args,
-        msg: &Message,
-        ctx: &Context<E>,
-    ) -> Result<Propagate, E> {
-        ctx.reply_only(msg.id, &self.0).await?;
+    async fn execute(&self, _args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E> {
+        ctx.reply_only(&self.0).await?;
         Ok(Propagate::No)
     }
 }

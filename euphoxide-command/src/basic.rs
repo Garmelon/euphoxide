@@ -1,7 +1,6 @@
 //! Basic command wrappers.
 
 use async_trait::async_trait;
-use euphoxide::api::Message;
 
 use super::{Command, Context, Info, Propagate};
 
@@ -61,8 +60,8 @@ where
         }
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
-        self.inner.execute(arg, msg, ctx).await
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+        self.inner.execute(arg, ctx).await
     }
 }
 
@@ -89,9 +88,9 @@ where
         self.inner.info(ctx).with_prepended_trigger(&self.prefix)
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
         if let Some(rest) = arg.trim_start().strip_prefix(&self.prefix) {
-            self.inner.execute(rest, msg, ctx).await
+            self.inner.execute(rest, ctx).await
         } else {
             Ok(Propagate::Yes)
         }
@@ -101,18 +100,17 @@ where
 // Black type magic, thanks a lot to https://github.com/kpreid and the
 // async_fn_traits crate!
 
-pub trait HandlerFn<'a0, 'a1, 'a2, E>:
-    Fn(&'a0 str, &'a1 Message, &'a2 Context<E>) -> Self::Future
+pub trait HandlerFn<'a0, 'a1, E>: Fn(&'a0 str, &'a1 Context<E>) -> Self::Future
 where
-    E: 'a2,
+    E: 'a1,
 {
     type Future: Future<Output = Result<Propagate, E>> + Send;
 }
 
-impl<'a0, 'a1, 'a2, E, F, Fut> HandlerFn<'a0, 'a1, 'a2, E> for F
+impl<'a0, 'a1, E, F, Fut> HandlerFn<'a0, 'a1, E> for F
 where
-    E: 'a2,
-    F: Fn(&'a0 str, &'a1 Message, &'a2 Context<E>) -> Fut + ?Sized,
+    E: 'a1,
+    F: Fn(&'a0 str, &'a1 Context<E>) -> Fut + ?Sized,
     Fut: Future<Output = Result<Propagate, E>> + Send,
 {
     type Future = Fut;
@@ -129,9 +127,9 @@ impl<F> FromHandler<F> {
 #[async_trait]
 impl<E, F> Command<E> for FromHandler<F>
 where
-    F: for<'a0, 'a1, 'a2> HandlerFn<'a0, 'a1, 'a2, E> + Sync,
+    F: for<'a0, 'a1> HandlerFn<'a0, 'a1, E> + Sync,
 {
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
-        (self.0)(arg, msg, ctx).await
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+        (self.0)(arg, ctx).await
     }
 }

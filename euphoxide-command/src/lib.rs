@@ -37,18 +37,21 @@ pub struct Context<E = euphoxide::Error> {
     pub conn: ClientConnHandle,
     /// The room state at the time the command was received.
     pub joined: Joined,
+    /// The message containing the command.
+    pub msg: Message,
 }
 
 impl<E> Context<E> {
     /// Send a message to the room the command was received in.
     pub async fn send(
         &self,
+        parent: Option<MessageId>,
         content: impl ToString,
     ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>>> {
         self.conn
             .send(api::Send {
                 content: content.to_string(),
-                parent: None,
+                parent,
             })
             .await
     }
@@ -56,35 +59,28 @@ impl<E> Context<E> {
     /// Like [`Self::send`], but ignoring the server's reply.
     ///
     /// This saves you from having to write `let _ =` to silence warnings.
-    pub async fn send_only(&self, content: impl ToString) -> euphoxide::Result<()> {
-        let _ignore = self.send(content).await?;
+    pub async fn send_only(
+        &self,
+        parent: Option<MessageId>,
+        content: impl ToString,
+    ) -> euphoxide::Result<()> {
+        let _ignore = self.send(parent, content).await?;
         Ok(())
     }
 
-    /// Send a reply to a message in the room the command was received in.
+    /// Send a reply to the message that triggered the command.
     pub async fn reply(
         &self,
-        parent: MessageId,
         content: impl ToString,
     ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>>> {
-        self.conn
-            .send(api::Send {
-                content: content.to_string(),
-                parent: Some(parent),
-            })
-            .await
+        self.send(Some(self.msg.id), content).await
     }
 
     /// Like [`Self::reply`], but ignoring the server's reply.
     ///
     /// This saves you from having to write `let _ =` to silence warnings.
-    pub async fn reply_only(
-        &self,
-        parent: MessageId,
-        content: impl ToString,
-    ) -> euphoxide::Result<()> {
-        let _ignore = self.reply(parent, content).await?;
-        Ok(())
+    pub async fn reply_only(&self, content: impl ToString) -> euphoxide::Result<()> {
+        self.send_only(Some(self.msg.id), content).await
     }
 }
 
@@ -137,7 +133,7 @@ pub trait Command<E = euphoxide::Error> {
         Info::default()
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E>;
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E>;
 }
 
 pub trait CommandExt: Sized {
@@ -217,7 +213,7 @@ impl<E> Commands<E> {
         client: Client,
         conn: ClientConnHandle,
         joined: Joined,
-        msg: &Message,
+        msg: Message,
     ) -> Result<Propagate, E> {
         let ctx = Context {
             commands: self.clone(),
@@ -225,10 +221,11 @@ impl<E> Commands<E> {
             client,
             conn,
             joined,
+            msg,
         };
 
         for command in &self.commands {
-            let propagate = command.execute(&msg.content, msg, &ctx).await?;
+            let propagate = command.execute(&ctx.msg.content, &ctx).await?;
             if propagate == Propagate::No {
                 return Ok(Propagate::No);
             }
@@ -252,7 +249,7 @@ impl<E> Commands<E> {
             return Ok(Propagate::Yes);
         };
 
-        let Ok(Data::SendEvent(SendEvent(msg))) = &packet.content else {
+        let Ok(Data::SendEvent(SendEvent(msg))) = packet.content else {
             return Ok(Propagate::Yes);
         };
 

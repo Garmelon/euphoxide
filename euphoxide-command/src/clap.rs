@@ -4,7 +4,6 @@ use std::marker::PhantomData;
 
 use async_trait::async_trait;
 use clap::{CommandFactory, Parser};
-use euphoxide::api::Message;
 
 use super::{Command, Context, Info, Propagate};
 
@@ -15,12 +14,7 @@ pub trait ClapCommand<E> {
     type Args;
 
     /// Execute the command with the parsed arguments.
-    async fn execute(
-        &self,
-        args: Self::Args,
-        msg: &Message,
-        ctx: &Context<E>,
-    ) -> Result<Propagate, E>;
+    async fn execute(&self, args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E>;
 }
 
 /// Parse bash-like quoted arguments separated by whitespace.
@@ -117,44 +111,48 @@ where
         }
     }
 
-    async fn execute(&self, arg: &str, msg: &Message, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,
             Err(err) => {
-                ctx.reply_only(msg.id, err).await?;
+                ctx.reply_only(err).await?;
                 return Ok(Propagate::No);
             }
         };
 
         // Hacky, but it should work fine in most cases
-        let usage = msg.content.strip_suffix(arg).unwrap_or("<command>").trim();
+        let usage = ctx
+            .msg
+            .content
+            .strip_suffix(arg)
+            .unwrap_or("<command>")
+            .trim();
         args.insert(0, usage.to_string());
 
         let args = match C::Args::try_parse_from(args) {
             Ok(args) => args,
             Err(err) => {
-                ctx.reply_only(msg.id, format!("{}", err.render())).await?;
+                ctx.reply_only(format!("{}", err.render())).await?;
                 return Ok(Propagate::No);
             }
         };
 
-        self.0.execute(args, msg, ctx).await
+        self.0.execute(args, ctx).await
     }
 }
 
 #[allow(missing_docs)]
-pub trait ClapHandlerFn<'a0, 'a1, A, E>:
-    Fn(A, &'a0 Message, &'a1 Context<E>) -> Self::Future
+pub trait ClapHandlerFn<'a, A, E>: Fn(A, &'a Context<E>) -> Self::Future
 where
-    E: 'a1,
+    E: 'a,
 {
     type Future: Future<Output = Result<Propagate, E>> + Send;
 }
 
-impl<'a0, 'a1, A, E, F, Fut> ClapHandlerFn<'a0, 'a1, A, E> for F
+impl<'a, A, E, F, Fut> ClapHandlerFn<'a, A, E> for F
 where
-    E: 'a1,
-    F: Fn(A, &'a0 Message, &'a1 Context<E>) -> Fut + ?Sized,
+    E: 'a,
+    F: Fn(A, &'a Context<E>) -> Fut + ?Sized,
     Fut: Future<Output = Result<Propagate, E>> + Send,
 {
     type Future = Fut;
@@ -163,13 +161,12 @@ where
 /// Convert a handler function into a [`Command`].
 ///
 /// ```
-/// use euphoxide::api::Message;
 /// use euphoxide_command::{Context, Propagate, clap::FromClapHandler};
 ///
 /// #[derive(clap::Parser)]
 /// struct Args {}
 ///
-/// async fn handler(args: Args, msg: &Message, ctx: &Context) -> euphoxide::Result<Propagate> {
+/// async fn handler(args: Args, ctx: &Context) -> euphoxide::Result<Propagate> {
 ///   todo!()
 /// }
 ///
@@ -186,10 +183,10 @@ impl<A, F> FromClapHandler<A, F> {
     // Artificially constrained so we don't accidentally choose an incorrect A.
     // Relying on type inference of A can result in unknown type errors even
     // though we know what A should be based on F.
-    pub fn new<'a0, 'a1, E, Fut>(handler: F) -> Self
+    pub fn new<'a, E, Fut>(handler: F) -> Self
     where
-        F: Fn(A, &'a0 Message, &'a1 Context<E>) -> Fut,
-        E: 'a1,
+        F: Fn(A, &'a Context<E>) -> Fut,
+        E: 'a,
     {
         Self {
             _a: PhantomData,
@@ -201,18 +198,13 @@ impl<A, F> FromClapHandler<A, F> {
 #[async_trait]
 impl<A, E, F> ClapCommand<E> for FromClapHandler<A, F>
 where
-    F: for<'a0, 'a1> ClapHandlerFn<'a0, 'a1, A, E> + Sync,
+    F: for<'a> ClapHandlerFn<'a, A, E> + Sync,
     A: Send + Sync + 'static,
 {
     type Args = A;
 
-    async fn execute(
-        &self,
-        args: Self::Args,
-        msg: &Message,
-        ctx: &Context<E>,
-    ) -> Result<Propagate, E> {
-        (self.handler)(args, msg, ctx).await
+    async fn execute(&self, args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E> {
+        (self.handler)(args, ctx).await
     }
 }
 
