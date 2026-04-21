@@ -51,7 +51,7 @@ where
             .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -60,7 +60,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, ctx).await
+        self.inner.execute(ctx, rest).await
     }
 }
 
@@ -97,7 +97,7 @@ where
             .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -113,7 +113,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, ctx).await
+        self.inner.execute(ctx, rest).await
     }
 }
 
@@ -151,7 +151,7 @@ where
             .with_prepended_trigger(format!("{}{} @{nick}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -168,7 +168,7 @@ where
             return Ok(Propagate::Yes);
         }
 
-        self.inner.execute(rest, ctx).await
+        self.inner.execute(ctx, rest).await
     }
 }
 

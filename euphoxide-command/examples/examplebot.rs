@@ -21,7 +21,7 @@ struct Increment;
 
 #[async_trait]
 impl Command<AppData> for Increment {
-    async fn execute(&self, _arg: &str, ctx: &AppContext) -> euphoxide::Result<Propagate> {
+    async fn execute(&self, ctx: &AppContext, _arg: &str) -> euphoxide::Result<Propagate> {
         let count = {
             let mut guard = ctx.data().counter.lock().unwrap();
             *guard += 1;
@@ -34,7 +34,7 @@ impl Command<AppData> for Increment {
     }
 }
 
-async fn pyramid(_arg: &str, ctx: &AppContext) -> euphoxide::Result<Propagate> {
+async fn pyramid(ctx: &AppContext, _arg: &str) -> euphoxide::Result<Propagate> {
     let mut parent = ctx.msg.id;
 
     for _ in 0..3 {
@@ -54,7 +54,7 @@ struct AddArgs {
     rhs: i64,
 }
 
-async fn add(args: AddArgs, ctx: &AppContext) -> euphoxide::Result<Propagate> {
+async fn add(ctx: &AppContext, args: AddArgs) -> euphoxide::Result<Propagate> {
     let result = args.lhs + args.rhs;
 
     ctx.reply_only(format!("{} + {} = {result}", args.lhs, args.rhs))

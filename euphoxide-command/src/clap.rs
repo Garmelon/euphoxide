@@ -14,7 +14,7 @@ pub trait ClapCommand<D, E> {
     type Args;
 
     /// Execute the command with the parsed arguments.
-    async fn execute(&self, args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E>;
+    async fn execute(&self, ctx: &Context<D, E>, args: Self::Args) -> Result<Propagate, E>;
 }
 
 /// Parse bash-like quoted arguments separated by whitespace.
@@ -112,7 +112,7 @@ where
         }
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,
             Err(err) => {
@@ -138,24 +138,24 @@ where
             }
         };
 
-        self.0.execute(args, ctx).await
+        self.0.execute(ctx, args).await
     }
 }
 
 #[allow(missing_docs)]
-pub trait ClapHandlerFn<'a, A, D, E>: Fn(A, &'a Context<D, E>) -> Self::Future
+pub trait ClapHandlerFn<'c, A, D, E>: Fn(&'c Context<D, E>, A) -> Self::Future
 where
-    D: 'a,
-    E: 'a,
+    D: 'c,
+    E: 'c,
 {
     type Future: Future<Output = Result<Propagate, E>> + Send;
 }
 
-impl<'a, A, D, E, F, Fut> ClapHandlerFn<'a, A, D, E> for F
+impl<'c, A, D, E, F, Fut> ClapHandlerFn<'c, A, D, E> for F
 where
-    D: 'a,
-    E: 'a,
-    F: Fn(A, &'a Context<D, E>) -> Fut + ?Sized,
+    D: 'c,
+    E: 'c,
+    F: Fn(&'c Context<D, E>, A) -> Fut + ?Sized,
     Fut: Future<Output = Result<Propagate, E>> + Send,
 {
     type Future = Fut;
@@ -169,7 +169,7 @@ where
 /// #[derive(clap::Parser)]
 /// struct Args {}
 ///
-/// async fn handler(args: Args, ctx: &Context) -> euphoxide::Result<Propagate> {
+/// async fn handler(ctx: &Context, args: Args) -> euphoxide::Result<Propagate> {
 ///   todo!()
 /// }
 ///
@@ -186,11 +186,11 @@ impl<A, F> FromClapHandler<A, F> {
     // Artificially constrained so we don't accidentally choose an incorrect A.
     // Relying on type inference of A can result in unknown type errors even
     // though we know what A should be based on F.
-    pub fn new<'a, D, E, Fut>(handler: F) -> Self
+    pub fn new<'c, D, E, Fut>(handler: F) -> Self
     where
-        F: Fn(A, &'a Context<D, E>) -> Fut,
-        D: 'a,
-        E: 'a,
+        F: Fn(&'c Context<D, E>, A) -> Fut,
+        D: 'c,
+        E: 'c,
     {
         Self {
             _a: PhantomData,
@@ -204,12 +204,12 @@ impl<A, D, E, F> ClapCommand<D, E> for FromClapHandler<A, F>
 where
     A: Send + Sync + 'static,
     D: Send + Sync,
-    F: for<'a> ClapHandlerFn<'a, A, D, E> + Sync,
+    F: for<'c> ClapHandlerFn<'c, A, D, E> + Sync,
 {
     type Args = A;
 
-    async fn execute(&self, args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E> {
-        (self.handler)(args, ctx).await
+    async fn execute(&self, ctx: &Context<D, E>, args: Self::Args) -> Result<Propagate, E> {
+        (self.handler)(ctx, args).await
     }
 }
 

@@ -20,7 +20,7 @@ where
     D: Send + Sync,
     E: From<euphoxide::Error>,
 {
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             ctx.reply_only(&self.0).await?;
             Ok(Propagate::No)
@@ -44,7 +44,7 @@ where
 {
     type Args = ShortHelpArgs;
 
-    async fn execute(&self, _args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, _args: Self::Args) -> Result<Propagate, E> {
         ctx.reply_only(&self.0).await?;
         Ok(Propagate::No)
     }

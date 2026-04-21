@@ -61,8 +61,8 @@ where
         }
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
-        self.inner.execute(arg, ctx).await
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
+        self.inner.execute(ctx, arg).await
     }
 }
 
@@ -90,9 +90,9 @@ where
         self.inner.info(ctx).with_prepended_trigger(&self.prefix)
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         if let Some(rest) = arg.trim_start().strip_prefix(&self.prefix) {
-            self.inner.execute(rest, ctx).await
+            self.inner.execute(ctx, rest).await
         } else {
             Ok(Propagate::Yes)
         }
@@ -102,19 +102,19 @@ where
 // Black type magic, thanks a lot to https://github.com/kpreid and the
 // async_fn_traits crate!
 
-pub trait HandlerFn<'a0, 'a1, D, E>: Fn(&'a0 str, &'a1 Context<D, E>) -> Self::Future
+pub trait HandlerFn<'c, 'm, D, E>: Fn(&'c Context<D, E>, &'m str) -> Self::Future
 where
-    D: 'a1,
-    E: 'a1,
+    D: 'c,
+    E: 'c,
 {
     type Future: Future<Output = Result<Propagate, E>> + Send;
 }
 
-impl<'a0, 'a1, D, E, F, Fut> HandlerFn<'a0, 'a1, D, E> for F
+impl<'c, 'm, D, E, F, Fut> HandlerFn<'c, 'm, D, E> for F
 where
-    D: 'a1,
-    E: 'a1,
-    F: Fn(&'a0 str, &'a1 Context<D, E>) -> Fut + ?Sized,
+    D: 'c,
+    E: 'c,
+    F: Fn(&'c Context<D, E>, &'m str) -> Fut + ?Sized,
     Fut: Future<Output = Result<Propagate, E>> + Send,
 {
     type Future = Fut;
@@ -132,9 +132,9 @@ impl<F> FromHandler<F> {
 impl<D, E, F> Command<D, E> for FromHandler<F>
 where
     D: Send + Sync,
-    F: for<'a0, 'a1> HandlerFn<'a0, 'a1, D, E> + Sync,
+    F: for<'c, 'm> HandlerFn<'c, 'm, D, E> + Sync,
 {
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
-        (self.0)(arg, ctx).await
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
+        (self.0)(ctx, arg).await
     }
 }

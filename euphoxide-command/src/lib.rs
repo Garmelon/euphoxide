@@ -138,7 +138,7 @@ pub trait Command<D = (), E = euphoxide::Error> {
         Info::default()
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E>;
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E>;
 }
 
 pub trait CommandExt: Sized {
@@ -239,7 +239,7 @@ impl<D, E> Commands<D, E> {
         };
 
         for command in &self.commands {
-            let propagate = command.execute(&ctx.msg.content, &ctx).await?;
+            let propagate = command.execute(&ctx, &ctx.msg.content).await?;
             if propagate == Propagate::No {
                 return Ok(Propagate::No);
             }
