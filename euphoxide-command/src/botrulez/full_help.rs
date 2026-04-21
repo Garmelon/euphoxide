@@ -27,7 +27,7 @@ impl FullHelp {
         self
     }
 
-    fn formulate_reply<E>(&self, ctx: &Context<E>) -> String {
+    fn formulate_reply<D, E>(&self, ctx: &Context<D, E>) -> String {
         let mut result = String::new();
 
         if !self.before.is_empty() {
@@ -56,11 +56,12 @@ impl FullHelp {
 }
 
 #[async_trait]
-impl<E> Command<E> for FullHelp
+impl<D, E> Command<D, E> for FullHelp
 where
+    D: Send + Sync,
     E: From<euphoxide::Error>,
 {
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             let reply = self.formulate_reply(ctx);
             ctx.reply_only(reply).await?;
@@ -78,13 +79,14 @@ pub struct FullHelpArgs {}
 
 #[cfg(feature = "clap")]
 #[async_trait]
-impl<E> ClapCommand<E> for FullHelp
+impl<D, E> ClapCommand<D, E> for FullHelp
 where
+    D: Send + Sync,
     E: From<euphoxide::Error>,
 {
     type Args = FullHelpArgs;
 
-    async fn execute(&self, _args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, _args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E> {
         let reply = self.formulate_reply(ctx);
         ctx.reply_only(reply).await?;
         Ok(Propagate::No)

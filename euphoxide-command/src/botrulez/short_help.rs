@@ -15,11 +15,12 @@ impl ShortHelp {
 }
 
 #[async_trait]
-impl<E> Command<E> for ShortHelp
+impl<D, E> Command<D, E> for ShortHelp
 where
+    D: Send + Sync,
     E: From<euphoxide::Error>,
 {
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             ctx.reply_only(&self.0).await?;
             Ok(Propagate::No)
@@ -36,13 +37,14 @@ pub struct ShortHelpArgs {}
 
 #[cfg(feature = "clap")]
 #[async_trait]
-impl<E> ClapCommand<E> for ShortHelp
+impl<D, E> ClapCommand<D, E> for ShortHelp
 where
+    D: Send + Sync,
     E: From<euphoxide::Error>,
 {
     type Args = ShortHelpArgs;
 
-    async fn execute(&self, _args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, _args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E> {
         ctx.reply_only(&self.0).await?;
         Ok(Propagate::No)
     }

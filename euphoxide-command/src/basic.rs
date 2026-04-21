@@ -48,11 +48,12 @@ impl<C> Described<C> {
 }
 
 #[async_trait]
-impl<E, C> Command<E> for Described<C>
+impl<D, E, C> Command<D, E> for Described<C>
 where
-    C: Command<E> + Sync,
+    D: Send + Sync,
+    C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<E>) -> Info {
+    fn info(&self, ctx: &Context<D, E>) -> Info {
         let info = self.inner.info(ctx);
         Info {
             trigger: self.trigger.clone().unwrap_or(info.trigger),
@@ -60,7 +61,7 @@ where
         }
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         self.inner.execute(arg, ctx).await
     }
 }
@@ -80,15 +81,16 @@ impl<C> Prefixed<C> {
 }
 
 #[async_trait]
-impl<E, C> Command<E> for Prefixed<C>
+impl<D, E, C> Command<D, E> for Prefixed<C>
 where
-    C: Command<E> + Sync,
+    D: Send + Sync,
+    C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<E>) -> Info {
+    fn info(&self, ctx: &Context<D, E>) -> Info {
         self.inner.info(ctx).with_prepended_trigger(&self.prefix)
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         if let Some(rest) = arg.trim_start().strip_prefix(&self.prefix) {
             self.inner.execute(rest, ctx).await
         } else {
@@ -100,17 +102,19 @@ where
 // Black type magic, thanks a lot to https://github.com/kpreid and the
 // async_fn_traits crate!
 
-pub trait HandlerFn<'a0, 'a1, E>: Fn(&'a0 str, &'a1 Context<E>) -> Self::Future
+pub trait HandlerFn<'a0, 'a1, D, E>: Fn(&'a0 str, &'a1 Context<D, E>) -> Self::Future
 where
+    D: 'a1,
     E: 'a1,
 {
     type Future: Future<Output = Result<Propagate, E>> + Send;
 }
 
-impl<'a0, 'a1, E, F, Fut> HandlerFn<'a0, 'a1, E> for F
+impl<'a0, 'a1, D, E, F, Fut> HandlerFn<'a0, 'a1, D, E> for F
 where
+    D: 'a1,
     E: 'a1,
-    F: Fn(&'a0 str, &'a1 Context<E>) -> Fut + ?Sized,
+    F: Fn(&'a0 str, &'a1 Context<D, E>) -> Fut + ?Sized,
     Fut: Future<Output = Result<Propagate, E>> + Send,
 {
     type Future = Fut;
@@ -125,11 +129,12 @@ impl<F> FromHandler<F> {
 }
 
 #[async_trait]
-impl<E, F> Command<E> for FromHandler<F>
+impl<D, E, F> Command<D, E> for FromHandler<F>
 where
-    F: for<'a0, 'a1> HandlerFn<'a0, 'a1, E> + Sync,
+    D: Send + Sync,
+    F: for<'a0, 'a1> HandlerFn<'a0, 'a1, D, E> + Sync,
 {
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         (self.0)(arg, ctx).await
     }
 }

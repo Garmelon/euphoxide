@@ -21,11 +21,12 @@ impl Default for Ping {
 }
 
 #[async_trait]
-impl<E> Command<E> for Ping
+impl<D, E> Command<D, E> for Ping
 where
+    D: Send + Sync,
     E: From<euphoxide::Error>,
 {
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             ctx.reply_only(&self.0).await?;
             Ok(Propagate::No)
@@ -42,13 +43,14 @@ pub struct PingArgs {}
 
 #[cfg(feature = "clap")]
 #[async_trait]
-impl<E> ClapCommand<E> for Ping
+impl<D, E> ClapCommand<D, E> for Ping
 where
+    D: Send + Sync,
     E: From<euphoxide::Error>,
 {
     type Args = PingArgs;
 
-    async fn execute(&self, _args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, _args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E> {
         ctx.reply_only(&self.0).await?;
         Ok(Propagate::No)
     }

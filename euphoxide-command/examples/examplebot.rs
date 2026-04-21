@@ -1,8 +1,9 @@
-use std::time::Duration;
+use std::{sync::Mutex, time::Duration};
 
+use async_trait::async_trait;
 use euphoxide_client::Clients;
 use euphoxide_command::{
-    CommandExt, Commands, Context, Propagate,
+    Command, CommandExt, Commands, Context, Propagate,
     basic::FromHandler,
     botrulez::{FullHelp, Ping, ShortHelp},
     clap::FromClapHandler,
@@ -10,7 +11,30 @@ use euphoxide_command::{
 use log::error;
 use tokio::sync::mpsc;
 
-async fn pyramid(_arg: &str, ctx: &Context) -> euphoxide::Result<Propagate> {
+struct AppData {
+    counter: Mutex<usize>,
+}
+
+type AppContext = Context<AppData>;
+
+struct Increment;
+
+#[async_trait]
+impl Command<AppData> for Increment {
+    async fn execute(&self, _arg: &str, ctx: &AppContext) -> euphoxide::Result<Propagate> {
+        let count = {
+            let mut guard = ctx.data().counter.lock().unwrap();
+            *guard += 1;
+            *guard
+        };
+
+        ctx.reply_only(format!("Counter incremented to {count}"))
+            .await?;
+        Ok(Propagate::No)
+    }
+}
+
+async fn pyramid(_arg: &str, ctx: &AppContext) -> euphoxide::Result<Propagate> {
     let mut parent = ctx.msg.id;
 
     for _ in 0..3 {
@@ -30,7 +54,7 @@ struct AddArgs {
     rhs: i64,
 }
 
-async fn add(args: AddArgs, ctx: &Context) -> euphoxide::Result<Propagate> {
+async fn add(args: AddArgs, ctx: &AppContext) -> euphoxide::Result<Propagate> {
     let result = args.lhs + args.rhs;
 
     ctx.reply_only(format!("{} + {} = {result}", args.lhs, args.rhs))
@@ -43,7 +67,9 @@ async fn add(args: AddArgs, ctx: &Context) -> euphoxide::Result<Propagate> {
 async fn main() {
     let (event_tx, mut event_rx) = mpsc::channel(10);
 
-    let mut commands = Commands::new();
+    let mut commands = Commands::new(AppData {
+        counter: Mutex::new(0),
+    });
 
     Ping::default()
         .general("ping")
@@ -64,6 +90,12 @@ async fn main() {
         .with_after("Created using euphoxide.")
         .specific("help")
         .hidden()
+        .add_to(&mut commands);
+
+    Increment
+        .described()
+        .with_description("increment a counter")
+        .general("increment")
         .add_to(&mut commands);
 
     FromHandler::new(pyramid)
