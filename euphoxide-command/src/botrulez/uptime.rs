@@ -96,7 +96,7 @@ where
     D: Send + Sync,
     E: From<euphoxide::Error>,
 {
-    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             let reply = self.formulate_reply(ctx, false, false);
             ctx.reply_only(reply).await?;
@@ -128,7 +128,7 @@ where
 {
     type Args = UptimeArgs;
 
-    async fn execute(&self, args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E> {
+    async fn execute(&self, ctx: &Context<D, E>, args: Self::Args) -> Result<Propagate, E> {
         let reply = self.formulate_reply(ctx, args.present, args.connected);
         ctx.reply_only(reply).await?;
         Ok(Propagate::No)
