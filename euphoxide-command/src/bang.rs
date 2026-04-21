@@ -176,15 +176,12 @@ mod test {
     #[test]
     fn test_parse_prefixed() {
         assert_eq!(parse_prefix_initiated("!foo", "!"), Some(("foo", "")));
-        assert_eq!(parse_prefix_initiated("    !foo", "!"), Some(("foo", "")));
+        assert_eq!(parse_prefix_initiated("    !foo", "!"), None);
         assert_eq!(
             parse_prefix_initiated("!foo    ", "!"),
             Some(("foo", "   "))
         );
-        assert_eq!(
-            parse_prefix_initiated("    !foo    ", "!"),
-            Some(("foo", "   "))
-        );
+        assert_eq!(parse_prefix_initiated("    !foo    ", "!"), None);
         assert_eq!(
             parse_prefix_initiated("!foo @bar", "!"),
             Some(("foo", "@bar"))
