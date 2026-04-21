@@ -40,17 +40,18 @@ impl<C> Global<C> {
 }
 
 #[async_trait]
-impl<E, C> Command<E> for Global<C>
+impl<D, E, C> Command<D, E> for Global<C>
 where
-    C: Command<E> + Sync,
+    D: Send + Sync,
+    C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<E>) -> Info {
+    fn info(&self, ctx: &Context<D, E>) -> Info {
         self.inner
             .info(ctx)
             .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -85,17 +86,18 @@ impl<C> General<C> {
 }
 
 #[async_trait]
-impl<E, C> Command<E> for General<C>
+impl<D, E, C> Command<D, E> for General<C>
 where
-    C: Command<E> + Sync,
+    D: Send + Sync,
+    C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<E>) -> Info {
+    fn info(&self, ctx: &Context<D, E>) -> Info {
         self.inner
             .info(ctx)
             .with_prepended_trigger(format!("{}{}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };
@@ -137,18 +139,19 @@ impl<C> Specific<C> {
 }
 
 #[async_trait]
-impl<E, C> Command<E> for Specific<C>
+impl<D, E, C> Command<D, E> for Specific<C>
 where
-    C: Command<E> + Sync,
+    D: Send + Sync,
+    C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<E>) -> Info {
+    fn info(&self, ctx: &Context<D, E>) -> Info {
         let nick = nick::mention(&ctx.joined.session.name);
         self.inner
             .info(ctx)
             .with_prepended_trigger(format!("{}{} @{nick}", self.prefix, self.name))
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         let Some((name, rest)) = parse_prefix_initiated(arg, &self.prefix) else {
             return Ok(Propagate::Yes);
         };

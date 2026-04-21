@@ -9,12 +9,12 @@ use super::{Command, Context, Info, Propagate};
 
 /// A [`Command`] whose arguments are parsed by [`clap`].
 #[async_trait]
-pub trait ClapCommand<E> {
+pub trait ClapCommand<D, E> {
     /// The command arguments that will be parsed by clap.
     type Args;
 
     /// Execute the command with the parsed arguments.
-    async fn execute(&self, args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E>;
+    async fn execute(&self, args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E>;
 }
 
 /// Parse bash-like quoted arguments separated by whitespace.
@@ -98,20 +98,21 @@ fn parse_quoted_args(text: &str) -> Result<Vec<String>, &'static str> {
 pub struct Clap<C>(pub C);
 
 #[async_trait]
-impl<E, C> Command<E> for Clap<C>
+impl<D, E, C> Command<D, E> for Clap<C>
 where
+    D: Send + Sync,
     E: From<euphoxide::Error>,
-    C: ClapCommand<E> + Sync,
+    C: ClapCommand<D, E> + Sync,
     C::Args: Parser + Send,
 {
-    fn info(&self, _ctx: &Context<E>) -> Info {
+    fn info(&self, _ctx: &Context<D, E>) -> Info {
         Info {
             description: C::Args::command().get_about().map(|s| s.to_string()),
             ..Info::default()
         }
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E> {
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,
             Err(err) => {
@@ -142,17 +143,19 @@ where
 }
 
 #[allow(missing_docs)]
-pub trait ClapHandlerFn<'a, A, E>: Fn(A, &'a Context<E>) -> Self::Future
+pub trait ClapHandlerFn<'a, A, D, E>: Fn(A, &'a Context<D, E>) -> Self::Future
 where
+    D: 'a,
     E: 'a,
 {
     type Future: Future<Output = Result<Propagate, E>> + Send;
 }
 
-impl<'a, A, E, F, Fut> ClapHandlerFn<'a, A, E> for F
+impl<'a, A, D, E, F, Fut> ClapHandlerFn<'a, A, D, E> for F
 where
+    D: 'a,
     E: 'a,
-    F: Fn(A, &'a Context<E>) -> Fut + ?Sized,
+    F: Fn(A, &'a Context<D, E>) -> Fut + ?Sized,
     Fut: Future<Output = Result<Propagate, E>> + Send,
 {
     type Future = Fut;
@@ -183,9 +186,10 @@ impl<A, F> FromClapHandler<A, F> {
     // Artificially constrained so we don't accidentally choose an incorrect A.
     // Relying on type inference of A can result in unknown type errors even
     // though we know what A should be based on F.
-    pub fn new<'a, E, Fut>(handler: F) -> Self
+    pub fn new<'a, D, E, Fut>(handler: F) -> Self
     where
-        F: Fn(A, &'a Context<E>) -> Fut,
+        F: Fn(A, &'a Context<D, E>) -> Fut,
+        D: 'a,
         E: 'a,
     {
         Self {
@@ -196,14 +200,15 @@ impl<A, F> FromClapHandler<A, F> {
 }
 
 #[async_trait]
-impl<A, E, F> ClapCommand<E> for FromClapHandler<A, F>
+impl<A, D, E, F> ClapCommand<D, E> for FromClapHandler<A, F>
 where
-    F: for<'a> ClapHandlerFn<'a, A, E> + Sync,
     A: Send + Sync + 'static,
+    D: Send + Sync,
+    F: for<'a> ClapHandlerFn<'a, A, D, E> + Sync,
 {
     type Args = A;
 
-    async fn execute(&self, args: Self::Args, ctx: &Context<E>) -> Result<Propagate, E> {
+    async fn execute(&self, args: Self::Args, ctx: &Context<D, E>) -> Result<Propagate, E> {
         (self.handler)(args, ctx).await
     }
 }

@@ -26,9 +26,9 @@ use self::{
 ///
 /// See [`Command`] for more details.
 #[non_exhaustive]
-pub struct Context<E = euphoxide::Error> {
+pub struct Context<D = (), E = euphoxide::Error> {
     /// The [`Commands`] instance the command is a part of.
-    pub commands: Arc<Commands<E>>,
+    pub commands: Arc<Commands<D, E>>,
     /// The [`Clients`] instance making up the bot.
     pub clients: Clients,
     /// The [`Client`] that received the command.
@@ -41,7 +41,12 @@ pub struct Context<E = euphoxide::Error> {
     pub msg: Message,
 }
 
-impl<E> Context<E> {
+impl<D, E> Context<D, E> {
+    /// Retrieve the user-supplied application data from [`Self::commands`].
+    pub fn data(&self) -> &D {
+        &self.commands.data
+    }
+
     /// Send a message to the room the command was received in.
     pub async fn send(
         &self,
@@ -128,12 +133,12 @@ pub enum Propagate {
 
 #[async_trait]
 #[expect(unused_variables)]
-pub trait Command<E = euphoxide::Error> {
-    fn info(&self, ctx: &Context<E>) -> Info {
+pub trait Command<D = (), E = euphoxide::Error> {
+    fn info(&self, ctx: &Context<D, E>) -> Info {
         Info::default()
     }
 
-    async fn execute(&self, arg: &str, ctx: &Context<E>) -> Result<Propagate, E>;
+    async fn execute(&self, arg: &str, ctx: &Context<D, E>) -> Result<Propagate, E>;
 }
 
 pub trait CommandExt: Sized {
@@ -166,35 +171,44 @@ pub trait CommandExt: Sized {
         clap::Clap(self)
     }
 
-    fn add_to<E>(self, commands: &mut Commands<E>)
+    fn add_to<D, E>(self, commands: &mut Commands<D, E>)
     where
-        Self: Command<E> + Send + Sync + 'static,
+        Self: Command<D, E> + Send + Sync + 'static,
     {
         commands.add(self);
     }
 }
 
-// Sadly this doesn't work: `impl<E, C: Command<E>> CommandExt for C {}`
-// It leaves E unconstrained. Instead, we just implement CommandExt for all
-// types. This is fine since it'll crash and burn once we try to use the created
-// commands as actual commands. It also follows the spirit of adding trait
-// constraints only where they are necessary.
+// Sadly this doesn't work: `impl<E, C: Command<E>> CommandExt for C {}` leaves
+// E unconstrained. Instead, we just implement CommandExt for all types. This is
+// fine since it'll crash and burn once we try to use the created commands as
+// actual commands. It also follows the spirit of adding trait constraints only
+// where they are necessary.
 impl<C> CommandExt for C {}
 
-pub struct Commands<E = euphoxide::Error> {
-    commands: Vec<Box<dyn Command<E> + Sync + Send>>,
+pub struct Commands<D = (), E = euphoxide::Error> {
+    commands: Vec<Box<dyn Command<D, E> + Sync + Send>>,
+    data: D,
 }
 
-impl<E> Commands<E> {
-    pub fn new() -> Self {
-        Self { commands: vec![] }
+impl<D, E> Commands<D, E> {
+    pub fn new(data: D) -> Self {
+        Self {
+            commands: vec![],
+            data,
+        }
     }
 
-    pub fn add(&mut self, command: impl Command<E> + Sync + Send + 'static) {
+    /// User-supplied application data.
+    pub fn data(&self) -> &D {
+        &self.data
+    }
+
+    pub fn add(&mut self, command: impl Command<D, E> + Sync + Send + 'static) {
         self.commands.push(Box::new(command));
     }
 
-    pub fn then(mut self, command: impl Command<E> + Sync + Send + 'static) -> Self {
+    pub fn then(mut self, command: impl Command<D, E> + Sync + Send + 'static) -> Self {
         self.add(command);
         self
     }
@@ -203,7 +217,7 @@ impl<E> Commands<E> {
         Arc::new(self)
     }
 
-    pub fn infos(&self, ctx: &Context<E>) -> Vec<Info> {
+    pub fn infos(&self, ctx: &Context<D, E>) -> Vec<Info> {
         self.commands.iter().map(|c| c.info(ctx)).collect()
     }
 
@@ -263,8 +277,8 @@ impl<E> Commands<E> {
 }
 
 // Has fewer restrictions on generic types than #[derive(Default)].
-impl<E> Default for Commands<E> {
+impl<D: Default, E> Default for Commands<D, E> {
     fn default() -> Self {
-        Self::new()
+        Self::new(Default::default())
     }
 }
