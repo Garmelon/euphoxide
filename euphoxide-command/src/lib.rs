@@ -100,27 +100,12 @@ impl Info {
         Self::default()
     }
 
-    pub fn with_trigger(mut self, trigger: impl ToString) -> Self {
-        self.trigger = Some(trigger.to_string());
-        self
-    }
-
-    pub fn with_description(mut self, description: impl ToString) -> Self {
-        self.description = Some(description.to_string());
-        self
-    }
-
     pub fn prepend_trigger(&mut self, trigger: impl ToString) {
         let cur_trigger = self.trigger.get_or_insert_default();
         if !cur_trigger.is_empty() {
             cur_trigger.insert(0, ' ');
         }
         cur_trigger.insert_str(0, &trigger.to_string());
-    }
-
-    pub fn with_prepended_trigger(mut self, trigger: impl ToString) -> Self {
-        self.prepend_trigger(trigger);
-        self
     }
 }
 

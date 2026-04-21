@@ -87,7 +87,9 @@ where
     C: Command<D, E> + Sync,
 {
     fn info(&self, ctx: &Context<D, E>) -> Info {
-        self.inner.info(ctx).with_prepended_trigger(&self.prefix)
+        let mut info = self.inner.info(ctx);
+        info.prepend_trigger(&self.prefix);
+        info
     }
 
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
