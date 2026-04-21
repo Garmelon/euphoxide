@@ -17,6 +17,8 @@ use euphoxide::{
 };
 use euphoxide_client::{Client, ClientEvent, Clients};
 
+use crate::basic::Hidden;
+
 use self::{
     bang::{General, Global, Specific},
     basic::{Described, Prefixed},
@@ -127,12 +129,12 @@ pub trait Command<D = (), E = euphoxide::Error> {
 }
 
 pub trait CommandExt: Sized {
-    fn described(self) -> Described<Self> {
-        Described::new(self)
+    fn hidden(self) -> Hidden<Self> {
+        Hidden(self)
     }
 
-    fn hidden(self) -> Described<Self> {
-        Described::hidden(self)
+    fn described(self, description: impl ToString) -> Described<Self> {
+        Described::new(self, description)
     }
 
     fn prefixed(self, prefix: impl ToString) -> Prefixed<Self> {

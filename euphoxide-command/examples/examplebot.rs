@@ -93,22 +93,19 @@ async fn main() {
         .add_to(&mut commands);
 
     Increment
-        .described()
-        .with_description("increment a counter")
         .general("increment")
+        .described("increment a counter")
         .add_to(&mut commands);
 
     FromHandler::new(pyramid)
-        .described()
-        .with_description("build a pyramid")
         .general("pyramid")
+        .described("build a pyramid")
         .add_to(&mut commands);
 
     FromClapHandler::new(add)
         .clap()
-        .described()
-        .with_description("add two numbers")
         .general("add")
+        .described("add two numbers")
         .add_to(&mut commands);
 
     let commands = commands.build();

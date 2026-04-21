@@ -4,46 +4,34 @@ use async_trait::async_trait;
 
 use super::{Command, Context, Info, Propagate};
 
-/// Rewrite or hide command info.
+pub struct Hidden<C>(pub C);
+
+#[async_trait]
+impl<D, E, C> Command<D, E> for Hidden<C>
+where
+    D: Send + Sync,
+    C: Command<D, E> + Sync,
+{
+    fn info(&self, _ctx: &Context<D, E>) -> Info {
+        Info::default()
+    }
+
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
+        self.0.execute(ctx, arg).await
+    }
+}
+
 pub struct Described<C> {
     pub inner: C,
-    pub trigger: Option<Option<String>>,
-    pub description: Option<Option<String>>,
+    pub description: String,
 }
 
 impl<C> Described<C> {
-    pub fn new(inner: C) -> Self {
+    pub fn new(inner: C, description: impl ToString) -> Self {
         Self {
             inner,
-            trigger: None,
-            description: None,
+            description: description.to_string(),
         }
-    }
-
-    pub fn hidden(inner: C) -> Self {
-        Self::new(inner)
-            .with_trigger_hidden()
-            .with_description_hidden()
-    }
-
-    pub fn with_trigger(mut self, trigger: impl ToString) -> Self {
-        self.trigger = Some(Some(trigger.to_string()));
-        self
-    }
-
-    pub fn with_trigger_hidden(mut self) -> Self {
-        self.trigger = Some(None);
-        self
-    }
-
-    pub fn with_description(mut self, description: impl ToString) -> Self {
-        self.description = Some(Some(description.to_string()));
-        self
-    }
-
-    pub fn with_description_hidden(mut self) -> Self {
-        self.description = Some(None);
-        self
     }
 }
 
@@ -54,11 +42,9 @@ where
     C: Command<D, E> + Sync,
 {
     fn info(&self, ctx: &Context<D, E>) -> Info {
-        let info = self.inner.info(ctx);
-        Info {
-            trigger: self.trigger.clone().unwrap_or(info.trigger),
-            description: self.description.clone().unwrap_or(info.description),
-        }
+        let mut info = self.inner.info(ctx);
+        info.description = Some(self.description.clone());
+        info
     }
 
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
