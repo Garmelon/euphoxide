@@ -49,5 +49,4 @@ rust.unused_lifetimes = "warn"
 rust.unused_qualifications = "warn"
 # Clippy
 clippy.large_enum_variant = "allow"
-clippy.result_large_err = "allow"
 clippy.use_self = "warn"
