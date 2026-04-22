@@ -6,26 +6,33 @@ use clap::Parser;
 use crate::clap::ClapCommand;
 use crate::{Command, Context, Propagate};
 
-/// Detailed help response listing all available commands.
+/// Detailed help reply listing all available commands.
 ///
-/// Combine with [`crate::General`] for a general `!help @BotName` command. See
-/// also <https://github.com/jedevc/botrulez#help>.
+/// Combine with [`crate::Specific`] for a `!help @BotName` command. See also
+/// <https://github.com/jedevc/botrulez#help>.
 #[derive(Default)]
 pub struct FullHelp {
+    /// Text to put before the command listing.
     pub before: String,
+    /// Text to put after the command listing.
     pub after: String,
 }
 
 impl FullHelp {
+    /// Create a [`FullHelp`] without additional text.
+    ///
+    /// Alias for [`FullHelp::default`].
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Set text to put before the command listing.
     pub fn with_before(mut self, before: impl ToString) -> Self {
         self.before = before.to_string();
         self
     }
 
+    /// Set text to put after the command listing.
     pub fn with_after(mut self, after: impl ToString) -> Self {
         self.after = after.to_string();
         self

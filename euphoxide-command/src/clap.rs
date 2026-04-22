@@ -181,11 +181,14 @@ pub struct FromClapHandler<A, F> {
     pub handler: F,
 }
 
-#[allow(missing_docs)]
 impl<A, F> FromClapHandler<A, F> {
     // Artificially constrained so we don't accidentally choose an incorrect A.
     // Relying on type inference of A can result in unknown type errors even
     // though we know what A should be based on F.
+
+    /// Wrap a handler function.
+    ///
+    /// See [`FromClapHandler`] for more details.
     pub fn new<'c, D, E, Fut>(handler: F) -> Self
     where
         F: Fn(&'c Context<D, E>, A) -> Fut,

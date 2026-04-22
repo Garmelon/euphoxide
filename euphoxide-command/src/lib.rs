@@ -2,6 +2,8 @@
 //!
 //! It is considered experimental for now.
 
+#![warn(missing_docs)]
+
 pub mod bang;
 pub mod basic;
 pub mod botrulez;
@@ -26,7 +28,7 @@ use self::{
 
 /// Execution context for commands.
 ///
-/// See [`Command`] for more details.
+/// See [`Command`] for more details on the type parameters.
 #[non_exhaustive]
 pub struct Context<D = (), E = euphoxide::Error> {
     /// The [`Commands`] instance the command is a part of.
@@ -91,17 +93,26 @@ impl<D, E> Context<D, E> {
     }
 }
 
+/// Information used to render a command's help.
 #[derive(Default)]
 pub struct CommandHelp {
+    /// How to trigger the command, e.g. `!foo`.
     pub trigger: Option<String>,
+    /// What happens when the command is triggered.
     pub description: Option<String>,
 }
 
 impl CommandHelp {
+    /// Create an empty command help.
+    ///
+    /// Alias for [`Self::default`].
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Prepend a trigger to the existing trigger.
+    ///
+    /// Adds a single space between the triggers if necessary.
     pub fn prepend_trigger(&mut self, trigger: impl ToString) {
         let cur_trigger = self.trigger.get_or_insert_default();
         if !cur_trigger.is_empty() {
@@ -114,50 +125,77 @@ impl CommandHelp {
 /// Whether a message should propagate to subsequent commands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Propagate {
+    /// The message should not propagate.
     No,
+    /// The message should propagate.
     Yes,
 }
 
+/// A bot command.
+///
+/// This trait is not restricted to the traditional bang commands. Instead, it
+/// can be used to react to any kind of message.
+///
+/// [`Command<D, E>`] has two type parameters:
+/// - `D` is user-supplied application data passed along in the [`Context`].
+/// - `E` is the custom error type returned by [`Command::execute`].
 #[async_trait]
 #[expect(unused_variables)]
 pub trait Command<D = (), E = euphoxide::Error> {
+    /// Get help information for this command.
     fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
         CommandHelp::default()
     }
 
+    /// Execute this command.
+    ///
+    /// This method is called for every message in a room, assuming no earlier
+    /// command returned [`Propagate::No`] for the same message. It is not
+    /// called for messages sent by the bot itself in the current session.
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E>;
 }
 
+/// Helper trait for constructing [`Command`]s with a function chaining API.
 pub trait CommandExt: Sized {
+    /// Wrap the command in a [`Hidden`].
     fn hidden(self) -> Hidden<Self> {
         Hidden(self)
     }
 
+    /// Wrap the command in a [`Described`].
     fn described(self, description: impl ToString) -> Described<Self> {
         Described::new(self, description)
     }
 
+    /// Wrap the command in a [`Prefixed`].
     fn prefixed(self, prefix: impl ToString) -> Prefixed<Self> {
         Prefixed::new(prefix, self)
     }
 
+    /// Wrap the command in a [`Global`].
     fn global(self, name: impl ToString) -> Global<Self> {
         Global::new(name, self)
     }
 
+    /// Wrap the command in a [`General`].
     fn general(self, name: impl ToString) -> General<Self> {
         General::new(name, self)
     }
 
+    /// Wrap the command in a [`Specific`].
     fn specific(self, name: impl ToString) -> Specific<Self> {
         Specific::new(name, self)
     }
 
+    /// Wrap the command in a [`clap::Clap`].
     #[cfg(feature = "clap")]
     fn clap(self) -> clap::Clap<Self> {
         clap::Clap(self)
     }
 
+    /// Register the command with a [`Commands`].
+    ///
+    /// See also [`Commands::add`].
     fn add_to<D, E>(self, commands: &mut Commands<D, E>)
     where
         Self: Command<D, E> + Send + Sync + 'static,
@@ -173,12 +211,19 @@ pub trait CommandExt: Sized {
 // where they are necessary.
 impl<C> CommandExt for C {}
 
+/// A collection of [`Command`]s.
+///
+/// Holds an ordered list of commands, as well as user-supplied application data
+/// that is passed along to the commands in the [`Context`].
+///
+/// See [`Command`] for more details on the type parameters.
 pub struct Commands<D = (), E = euphoxide::Error> {
     commands: Vec<Box<dyn Command<D, E> + Sync + Send>>,
     data: D,
 }
 
 impl<D, E> Commands<D, E> {
+    /// Create an empty command collection with user-supplied application data.
     pub fn new(data: D) -> Self {
         Self {
             commands: vec![],
@@ -191,14 +236,17 @@ impl<D, E> Commands<D, E> {
         &self.data
     }
 
+    /// Append a command to the command list.
     pub fn add(&mut self, command: impl Command<D, E> + Sync + Send + 'static) {
         self.commands.push(Box::new(command));
     }
 
+    /// Get help information for all commands.
     pub fn help(&self, ctx: &Context<D, E>) -> Vec<CommandHelp> {
         self.commands.iter().map(|c| c.help(ctx)).collect()
     }
 
+    /// Execute stored commands for a [`Message`] that you've just received.
     pub async fn handle_message(
         self: Arc<Self>,
         clients: Clients,
@@ -226,6 +274,7 @@ impl<D, E> Commands<D, E> {
         Ok(Propagate::Yes)
     }
 
+    /// Execute stored commands for a [`ClientEvent`] that you've just received.
     pub async fn handle_event(
         self: Arc<Self>,
         clients: Clients,

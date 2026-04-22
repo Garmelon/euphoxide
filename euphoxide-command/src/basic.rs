@@ -4,7 +4,11 @@ use async_trait::async_trait;
 
 use super::{Command, CommandHelp, Context, Propagate};
 
-pub struct Hidden<C>(pub C);
+/// Wrap a [`Command`], hiding its [`Command::help`].
+pub struct Hidden<C>(
+    /// The wrapped command.
+    pub C,
+);
 
 #[async_trait]
 impl<D, E, C> Command<D, E> for Hidden<C>
@@ -17,12 +21,16 @@ where
     }
 }
 
+/// Wrap a [`Command`], overwriting its [`CommandHelp::description`].
 pub struct Described<C> {
+    /// The wrapped command.
     pub inner: C,
+    /// The new description.
     pub description: String,
 }
 
 impl<C> Described<C> {
+    /// Create a [`Described`] wrapping a command.
     pub fn new(inner: C, description: impl ToString) -> Self {
         Self {
             inner,
@@ -48,12 +56,19 @@ where
     }
 }
 
+/// Wrap a [`Command`], requiring a prefix before triggering.
+///
+/// This wrapper is similar to [`crate::Global`], but it doesn't require a space
+/// between the prefix and the arguments.
 pub struct Prefixed<C> {
+    /// The prefix that is stripped from the command arguments.
     pub prefix: String,
+    /// The wrapped command.
     pub inner: C,
 }
 
 impl<C> Prefixed<C> {
+    /// Create a [`Prefixed`] wrapping a command.
     pub fn new<S: ToString>(prefix: S, inner: C) -> Self {
         Self {
             prefix: prefix.to_string(),
@@ -86,6 +101,7 @@ where
 // Black type magic, thanks a lot to https://github.com/kpreid and the
 // async_fn_traits crate!
 
+#[expect(missing_docs)]
 pub trait HandlerFn<'c, 'm, D, E>: Fn(&'c Context<D, E>, &'m str) -> Self::Future
 where
     D: 'c,
@@ -104,9 +120,23 @@ where
     type Future = Fut;
 }
 
+/// Convert a handler function into a [`Command`].
+///
+/// ```
+/// use euphoxide_command::{Context, Propagate, basic::FromHandler};
+///
+/// async fn handler(ctx: &Context, arg: &str) -> euphoxide::Result<Propagate> {
+///   todo!()
+/// }
+///
+/// let cmd = FromHandler::new(handler);
+/// ```
 pub struct FromHandler<F>(pub F);
 
 impl<F> FromHandler<F> {
+    /// Wrap a handler function.
+    ///
+    /// See [`FromHandler`] for more details.
     pub fn new(f: F) -> Self {
         Self(f)
     }
