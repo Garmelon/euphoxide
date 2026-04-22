@@ -25,7 +25,7 @@ tokio = { workspace = true, features = ["full"] }
 tokio-tungstenite = { workspace = true, features = ["rustls-tls-native-roots"] }
 
 [[example]]
-name = "examplebot"
+name = "examplebot_command"
 required-features = ["clap"]
 
 [lints]
