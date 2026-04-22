@@ -6,6 +6,10 @@ use clap::Parser;
 use crate::clap::ClapCommand;
 use crate::{Command, Context, Propagate};
 
+/// Detailed help response listing all available commands.
+///
+/// Combine with [`crate::General`] for a general `!help @BotName` command. See
+/// also <https://github.com/jedevc/botrulez#help>.
 #[derive(Default)]
 pub struct FullHelp {
     pub before: String,
@@ -35,10 +39,10 @@ impl FullHelp {
             result.push('\n');
         }
 
-        for info in ctx.commands.infos(ctx) {
-            if let Some(trigger) = &info.trigger {
+        for help in ctx.commands.help(ctx) {
+            if let Some(trigger) = &help.trigger {
                 result.push_str(trigger);
-                if let Some(description) = &info.description {
+                if let Some(description) = &help.description {
                     result.push_str(" - ");
                     result.push_str(description);
                 }

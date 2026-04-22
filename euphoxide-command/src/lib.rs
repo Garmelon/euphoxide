@@ -92,12 +92,12 @@ impl<D, E> Context<D, E> {
 }
 
 #[derive(Default)]
-pub struct Info {
+pub struct CommandHelp {
     pub trigger: Option<String>,
     pub description: Option<String>,
 }
 
-impl Info {
+impl CommandHelp {
     pub fn new() -> Self {
         Self::default()
     }
@@ -121,8 +121,8 @@ pub enum Propagate {
 #[async_trait]
 #[expect(unused_variables)]
 pub trait Command<D = (), E = euphoxide::Error> {
-    fn info(&self, ctx: &Context<D, E>) -> Info {
-        Info::default()
+    fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
+        CommandHelp::default()
     }
 
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E>;
@@ -204,8 +204,8 @@ impl<D, E> Commands<D, E> {
         Arc::new(self)
     }
 
-    pub fn infos(&self, ctx: &Context<D, E>) -> Vec<Info> {
-        self.commands.iter().map(|c| c.info(ctx)).collect()
+    pub fn help(&self, ctx: &Context<D, E>) -> Vec<CommandHelp> {
+        self.commands.iter().map(|c| c.help(ctx)).collect()
     }
 
     pub async fn handle_message(

@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 
-use super::{Command, Context, Info, Propagate};
+use super::{Command, CommandHelp, Context, Propagate};
 
 pub struct Hidden<C>(pub C);
 
@@ -37,8 +37,8 @@ where
     D: Send + Sync,
     C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<D, E>) -> Info {
-        let mut info = self.inner.info(ctx);
+    fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
+        let mut info = self.inner.help(ctx);
         info.description = Some(self.description.clone());
         info
     }
@@ -68,8 +68,8 @@ where
     D: Send + Sync,
     C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<D, E>) -> Info {
-        let mut info = self.inner.info(ctx);
+    fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
+        let mut info = self.inner.help(ctx);
         info.prepend_trigger(&self.prefix);
         info
     }

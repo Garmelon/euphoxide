@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use async_trait::async_trait;
 use clap::{CommandFactory, Parser};
 
-use super::{Command, Context, Info, Propagate};
+use super::{Command, CommandHelp, Context, Propagate};
 
 /// A [`Command`] whose arguments are parsed by [`clap`].
 #[async_trait]
@@ -105,10 +105,10 @@ where
     C: ClapCommand<D, E> + Sync,
     C::Args: Parser + Send,
 {
-    fn info(&self, _ctx: &Context<D, E>) -> Info {
-        Info {
+    fn help(&self, _ctx: &Context<D, E>) -> CommandHelp {
+        CommandHelp {
             description: C::Args::command().get_about().map(|s| s.to_string()),
-            ..Info::default()
+            ..CommandHelp::default()
         }
     }
 
