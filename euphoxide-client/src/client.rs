@@ -2,7 +2,7 @@ use std::{fmt, result, str::FromStr, sync::Arc};
 
 use cookie::Cookie;
 use euphoxide::{
-    api::{Auth, AuthOption, BounceEvent, Data, Nick, ParsedPacket},
+    api::{Auth, AuthOption, Data, Nick, ParsedPacket},
     client::{ClientConn, ClientConnHandle, State},
 };
 use jiff::Timestamp;
@@ -178,10 +178,7 @@ impl ClientTask {
 
         match packet.into_data()? {
             // Attempting to authenticate
-            Data::BounceEvent(BounceEvent {
-                auth_options: Some(auth_options),
-                ..
-            }) if auth_options.contains(&AuthOption::Passcode) => {
+            Data::BounceEvent(_) => {
                 if let Some(password) = &self.config.password {
                     conn.send(Auth {
                         r#type: AuthOption::Passcode,
