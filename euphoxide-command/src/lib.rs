@@ -155,6 +155,21 @@ pub trait Command<D = (), E = euphoxide::Error> {
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E>;
 }
 
+#[async_trait]
+impl<D, E, C> Command<D, E> for &C
+where
+    D: Send + Sync,
+    C: Command<D, E> + Sync,
+{
+    fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
+        (*self).help(ctx)
+    }
+
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
+        (*self).execute(ctx, arg).await
+    }
+}
+
 /// Helper trait for constructing [`Command`]s with a function chaining API.
 pub trait CommandExt: Sized {
     /// Wrap the command in a [`Hidden`].

@@ -17,6 +17,20 @@ pub trait ClapCommand<D, E> {
     async fn execute(&self, ctx: &Context<D, E>, args: Self::Args) -> Result<Propagate, E>;
 }
 
+#[async_trait]
+impl<D, E, C> ClapCommand<D, E> for &C
+where
+    D: Send + Sync,
+    C: ClapCommand<D, E> + Sync,
+    C::Args: Send,
+{
+    type Args = C::Args;
+
+    async fn execute(&self, ctx: &Context<D, E>, args: Self::Args) -> Result<Propagate, E> {
+        (*self).execute(ctx, args).await
+    }
+}
+
 /// Parse bash-like quoted arguments separated by whitespace.
 ///
 /// Outside of quotes, the backslash either escapes the next character or forms
@@ -213,6 +227,28 @@ where
 
     async fn execute(&self, ctx: &Context<D, E>, args: Self::Args) -> Result<Propagate, E> {
         (self.handler)(ctx, args).await
+    }
+}
+
+/// This implementation is provided for convenience so you don't have to always
+/// wrap `FromClapHandler` with a `Clap`.
+#[async_trait]
+impl<A, D, E, F> Command<D, E> for FromClapHandler<A, F>
+where
+    // These constraints are an unholy amalgam
+    // of "impl ClapCommand for FromClapHandler"
+    // and "impl Command for Clap".
+    A: Parser + Send + Sync + 'static,
+    D: Send + Sync,
+    E: From<euphoxide::Error>,
+    F: for<'c> ClapHandlerFn<'c, A, D, E> + Sync,
+{
+    fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
+        Clap(self).help(ctx)
+    }
+
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
+        Clap(self).execute(ctx, arg).await
     }
 }
 
