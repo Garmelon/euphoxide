@@ -195,15 +195,6 @@ impl<D, E> Commands<D, E> {
         self.commands.push(Box::new(command));
     }
 
-    pub fn then(mut self, command: impl Command<D, E> + Sync + Send + 'static) -> Self {
-        self.add(command);
-        self
-    }
-
-    pub fn build(self) -> Arc<Self> {
-        Arc::new(self)
-    }
-
     pub fn help(&self, ctx: &Context<D, E>) -> Vec<CommandHelp> {
         self.commands.iter().map(|c| c.help(ctx)).collect()
     }
