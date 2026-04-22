@@ -3,7 +3,7 @@
 use async_trait::async_trait;
 use euphoxide::nick;
 
-use super::{Command, Context, Info, Propagate};
+use super::{Command, CommandHelp, Context, Propagate};
 
 /// Parse a prefix-initiated command.
 ///
@@ -45,8 +45,8 @@ where
     D: Send + Sync,
     C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<D, E>) -> Info {
-        let mut info = self.inner.info(ctx);
+    fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
+        let mut info = self.inner.help(ctx);
         info.prepend_trigger(format!("{}{}", self.prefix, self.name));
         info
     }
@@ -91,8 +91,8 @@ where
     D: Send + Sync,
     C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<D, E>) -> Info {
-        let mut info = self.inner.info(ctx);
+    fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
+        let mut info = self.inner.help(ctx);
         info.prepend_trigger(format!("{}{}", self.prefix, self.name));
         info
     }
@@ -144,9 +144,9 @@ where
     D: Send + Sync,
     C: Command<D, E> + Sync,
 {
-    fn info(&self, ctx: &Context<D, E>) -> Info {
+    fn help(&self, ctx: &Context<D, E>) -> CommandHelp {
         let nick = nick::mention(&ctx.joined.session.name);
-        let mut info = self.inner.info(ctx);
+        let mut info = self.inner.help(ctx);
         info.prepend_trigger(format!("{}{} @{nick}", self.prefix, self.name));
         info
     }
