@@ -75,22 +75,26 @@ async fn main() {
     });
 
     Ping::default()
+        .clap()
         .general("ping")
         .hidden()
         .add_to(&mut commands);
 
     Ping::default()
+        .clap()
         .specific("ping")
         .hidden()
         .add_to(&mut commands);
 
     ShortHelp::new("/me demonstrates how to use euphoxide")
+        .clap()
         .general("help")
         .hidden()
         .add_to(&mut commands);
 
     FullHelp::new()
         .with_after("Created using euphoxide.")
+        .clap()
         .specific("help")
         .hidden()
         .add_to(&mut commands);
@@ -106,7 +110,6 @@ async fn main() {
         .add_to(&mut commands);
 
     FromClapHandler::new(add)
-        .clap()
         .general("add")
         .described("add two numbers")
         .add_to(&mut commands);
