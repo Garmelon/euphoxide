@@ -1,4 +1,7 @@
-use std::{sync::Mutex, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use async_trait::async_trait;
 use euphoxide_client::Clients;
@@ -108,7 +111,7 @@ async fn main() {
         .described("add two numbers")
         .add_to(&mut commands);
 
-    let commands = commands.build();
+    let commands = Arc::new(commands);
     let clients = Clients::new(event_tx);
 
     clients
