@@ -6,9 +6,17 @@ use clap::Parser;
 use crate::clap::ClapCommand;
 use crate::{Command, Context, Propagate};
 
+/// Simple ping reply.
+///
+/// Combine with [`crate::General`] for a `!ping` command and with
+/// [`crate::Specific`] for a `!ping @BotName` command. See also
+/// <https://github.com/jedevc/botrulez#ping>.
 pub struct Ping(pub String);
 
 impl Ping {
+    /// Create a ping reply with a specific message.
+    ///
+    /// Use [`Self::default()`] for a generic `Pong!` reply.
     pub fn new<S: ToString>(reply: S) -> Self {
         Self(reply.to_string())
     }

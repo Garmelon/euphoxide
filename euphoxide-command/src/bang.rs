@@ -18,13 +18,22 @@ pub fn parse_prefix_initiated<'a>(text: &'a str, prefix: &str) -> Option<(&'a st
     Some((name, rest))
 }
 
+/// A global bang command: `!foo <args>`
+///
+/// Assumes that there is no specific version of the command. A message like
+/// `!foo @BotName` will be parsed such that `@BotName` is just part of the
+/// argument string.
 pub struct Global<C> {
+    /// Prefix character(s), e.g. `!`.
     pub prefix: String,
+    /// Name of the command
     pub name: String,
+    /// Wrapped [`Command`] implementing the logic.
     pub inner: C,
 }
 
 impl<C> Global<C> {
+    /// Create a new global command wrapping a [`Command`].
     pub fn new<S: ToString>(name: S, inner: C) -> Self {
         Self {
             prefix: "!".to_string(),
@@ -33,6 +42,7 @@ impl<C> Global<C> {
         }
     }
 
+    /// Set the prefix character(s).
     pub fn with_prefix<S: ToString>(mut self, prefix: S) -> Self {
         self.prefix = prefix.to_string();
         self
@@ -64,13 +74,22 @@ where
     }
 }
 
+/// A general bang command: `!foo <args>`
+///
+/// Assumes that there may be a specific version of the command. A message like
+/// `!foo @BotName` will be parsed as a specific command for bot `@BotName` and
+/// thus not trigger this general command.
 pub struct General<C> {
+    /// Prefix character(s), e.g. `!`.
     pub prefix: String,
+    /// Name of the command
     pub name: String,
+    /// Wrapped [`Command`] implementing the logic.
     pub inner: C,
 }
 
 impl<C> General<C> {
+    /// Create a new general command wrapping a [`Command`].
     pub fn new<S: ToString>(name: S, inner: C) -> Self {
         Self {
             prefix: "!".to_string(),
@@ -79,6 +98,7 @@ impl<C> General<C> {
         }
     }
 
+    /// Set the prefix character(s).
     pub fn with_prefix<S: ToString>(mut self, prefix: S) -> Self {
         self.prefix = prefix.to_string();
         self
@@ -117,13 +137,21 @@ where
     }
 }
 
+/// A specific bang command: `!foo @BotName <args>`
+///
+/// Only triggers if the `@BotName` part matches the current name modulo
+/// normalization via [`nick::normalize`].
 pub struct Specific<C> {
+    /// Prefix character(s), e.g. `!`.
     pub prefix: String,
+    /// Name of the command
     pub name: String,
+    /// Wrapped [`Command`] implementing the logic.
     pub inner: C,
 }
 
 impl<C> Specific<C> {
+    /// Create a new general command wrapping a [`Command`].
     pub fn new<S: ToString>(name: S, inner: C) -> Self {
         Self {
             prefix: "!".to_string(),
@@ -132,6 +160,7 @@ impl<C> Specific<C> {
         }
     }
 
+    /// Set the prefix character(s).
     pub fn with_prefix<S: ToString>(mut self, prefix: S) -> Self {
         self.prefix = prefix.to_string();
         self

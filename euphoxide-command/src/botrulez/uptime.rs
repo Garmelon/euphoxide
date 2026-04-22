@@ -7,10 +7,12 @@ use jiff::{Span, Timestamp, Unit};
 use crate::clap::ClapCommand;
 use crate::{Command, Context, Propagate};
 
+/// Format a timestamp as `YYYY-MM-DD HH:MM:SS UTC`.
 pub fn format_time(t: Timestamp) -> String {
     t.strftime("%Y-%m-%d %H:%M:%S UTC").to_string()
 }
 
+/// Format a relative point in time in a human-readable way.
 pub fn format_relative_time(d: Span) -> String {
     if d.is_positive() {
         format!("in {}", format_duration(d.abs()))
@@ -19,6 +21,7 @@ pub fn format_relative_time(d: Span) -> String {
     }
 }
 
+/// Format a duration in a human-readable way.
 pub fn format_duration(d: Span) -> String {
     let total = d.abs().total(Unit::Second).unwrap() as i64;
     let secs = total % 60;
@@ -51,6 +54,10 @@ pub fn format_duration(d: Span) -> String {
     }
 }
 
+/// Uptime reply.
+///
+/// Combine with [`crate::Specific`] for a general `!uptime @BotName` command.
+/// See also <https://github.com/jedevc/botrulez#uptime>.
 pub struct Uptime;
 
 impl Uptime {

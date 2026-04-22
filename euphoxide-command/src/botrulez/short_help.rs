@@ -6,9 +6,17 @@ use clap::Parser;
 use crate::clap::ClapCommand;
 use crate::{Command, Context, Propagate};
 
-pub struct ShortHelp(pub String);
+/// Short help reply.
+///
+/// Combine with [`crate::General`] for a `!help` command. See also
+/// <https://github.com/jedevc/botrulez#help>.
+pub struct ShortHelp(
+    /// Text to reply with.
+    pub String,
+);
 
 impl ShortHelp {
+    /// Create a [`ShortHelp`].
     pub fn new<S: ToString>(text: S) -> Self {
         Self(text.to_string())
     }
