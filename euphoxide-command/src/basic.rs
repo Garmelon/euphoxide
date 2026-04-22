@@ -12,10 +12,6 @@ where
     D: Send + Sync,
     C: Command<D, E> + Sync,
 {
-    fn info(&self, _ctx: &Context<D, E>) -> Info {
-        Info::default()
-    }
-
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         self.0.execute(ctx, arg).await
     }

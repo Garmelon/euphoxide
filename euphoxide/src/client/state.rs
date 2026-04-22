@@ -88,6 +88,8 @@ pub struct Joining {
 }
 
 impl Joining {
+    // No Default implementation since we're getting the current timestamp and
+    // that side effect feels odd to do in a Default.
     fn new() -> Self {
         Self {
             since: Timestamp::now(),
@@ -234,6 +236,8 @@ impl State {
     ///
     /// Assumes that no packets have been received yet. See also
     /// [`Self::on_data`].
+    ///
+    /// Equivalent to [`Self::default`].
     pub fn new() -> Self {
         Joining::new().into()
     }
