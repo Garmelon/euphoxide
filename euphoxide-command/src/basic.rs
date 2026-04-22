@@ -75,7 +75,7 @@ where
     }
 
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
-        if let Some(rest) = arg.trim_start().strip_prefix(&self.prefix) {
+        if let Some(rest) = arg.strip_prefix(&self.prefix) {
             self.inner.execute(ctx, rest).await
         } else {
             Ok(Propagate::Yes)
