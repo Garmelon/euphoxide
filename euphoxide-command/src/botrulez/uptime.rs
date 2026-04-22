@@ -53,10 +53,6 @@ pub fn format_duration(d: Span) -> String {
 
 pub struct Uptime;
 
-pub trait HasStartTime {
-    fn start_time(&self) -> Timestamp;
-}
-
 impl Uptime {
     fn formulate_reply<D, E>(&self, ctx: &Context<D, E>, joined: bool, connected: bool) -> String {
         let start = ctx.clients.start_time();
