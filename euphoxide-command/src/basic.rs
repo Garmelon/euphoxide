@@ -4,11 +4,33 @@ use async_trait::async_trait;
 
 use super::{Command, CommandHelp, Context, Propagate};
 
-/// Wrap a [`Command`], hiding its [`Command::help`].
-pub struct Hidden<C>(
-    /// The wrapped command.
-    pub C,
+/// Reply with a single message.
+pub struct Reply(
+    /// The message to reply with.
+    pub String,
 );
+
+impl Reply {
+    /// Create a new [`Reply`].
+    pub fn new(content: impl ToString) -> Self {
+        Self(content.to_string())
+    }
+}
+
+#[async_trait]
+impl<D, E> Command<D, E> for Reply
+where
+    D: Send + Sync,
+    E: From<euphoxide::Error>,
+{
+    async fn execute(&self, ctx: &Context<D, E>, _arg: &str) -> Result<Propagate, E> {
+        ctx.reply_only(&self.0).await?;
+        Ok(Propagate::No)
+    }
+}
+
+/// Wrap a [`Command`], hiding its [`Command::help`].
+pub struct Hidden<C>(pub C);
 
 #[async_trait]
 impl<D, E, C> Command<D, E> for Hidden<C>
