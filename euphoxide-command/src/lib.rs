@@ -19,7 +19,7 @@ use euphoxide::{
 };
 use euphoxide_client::{Client, ClientEvent, Clients};
 
-use crate::basic::Hidden;
+use crate::basic::{Exact, Hidden};
 
 use self::{
     bang::{General, Global, Specific},
@@ -172,6 +172,11 @@ where
 
 /// Helper trait for constructing [`Command`]s with a function chaining API.
 pub trait CommandExt: Sized {
+    /// Wrap the command in an [`Exact`].
+    fn exact(self) -> Exact<Self> {
+        Exact(self)
+    }
+
     /// Wrap the command in a [`Hidden`].
     fn hidden(self) -> Hidden<Self> {
         Hidden(self)

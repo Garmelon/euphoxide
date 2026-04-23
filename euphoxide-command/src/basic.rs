@@ -29,6 +29,24 @@ where
     }
 }
 
+/// Execute a [`Command`] only if the argument is empty.
+pub struct Exact<C>(pub C);
+
+#[async_trait]
+impl<D, E, C> Command<D, E> for Exact<C>
+where
+    D: Send + Sync,
+    C: Command<D, E> + Sync,
+{
+    async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
+        if !arg.trim().is_empty() {
+            return Ok(Propagate::Yes);
+        }
+
+        self.0.execute(ctx, arg).await
+    }
+}
+
 /// Wrap a [`Command`], hiding its [`Command::help`].
 pub struct Hidden<C>(pub C);
 
