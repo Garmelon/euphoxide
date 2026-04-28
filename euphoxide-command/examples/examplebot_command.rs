@@ -118,8 +118,7 @@ async fn main() {
     clients
         .client_builder("test")
         .with_username("examplebot")
-        .build_and_add()
-        .await;
+        .build_and_add_only();
 
     while let Some((client, event)) = event_rx.recv().await {
         let commands = commands.clone();

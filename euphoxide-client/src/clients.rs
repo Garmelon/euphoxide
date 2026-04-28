@@ -145,11 +145,20 @@ impl Clients {
 
     /// Add a new client to the collection.
     ///
-    /// The client must have a unique ID.
-    pub async fn add_client(&self, config: ClientConfig) -> Client {
+    /// The client must have a unique ID. There is no need to await the returned
+    /// [`Future`] if you have no need for the newly added [`Client`].
+    ///
+    /// It is recommended to use [`Self::add_client_only`] unless you need the
+    /// return value.
+    pub fn add_client(&self, config: ClientConfig) -> impl Future<Output = Client> {
         let (tx, rx) = oneshot::channel();
         let _ = self.cmd_tx.send(Command::AddClient(config, tx));
-        rx.await.expect("task should still be running")
+        async move { rx.await.expect("task should still be running") }
+    }
+
+    /// Like [`Self::add_client`], but with no return value.
+    pub fn add_client_only(&self, config: ClientConfig) {
+        let _ignore = self.add_client(config);
     }
 }
 
@@ -170,7 +179,15 @@ impl Clients {
 impl ClientBuilder<&Clients> {
     /// Build a client and add it to the client collection the builder was
     /// created from.
+    ///
+    /// It is recommended to use [`Self::build_and_add_only`] unless you need
+    /// the return value.
     pub async fn build_and_add(self) -> Client {
         self.base.add_client(self.config).await
+    }
+
+    /// Like [`Self::build_and_add`], but with no return value., but with no return value.
+    pub fn build_and_add_only(self) {
+        self.base.add_client_only(self.config);
     }
 }

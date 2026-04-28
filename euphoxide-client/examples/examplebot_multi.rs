@@ -74,8 +74,7 @@ async fn run() -> anyhow::Result<()> {
     clients
         .client_builder("test")
         .with_username("examplebot")
-        .build_and_add()
-        .await;
+        .build_and_add_only();
 
     while let Some((_, event)) = event_rx.recv().await {
         if let ClientEvent::Packet { conn, packet, .. } = event {
