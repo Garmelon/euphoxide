@@ -102,7 +102,11 @@ impl Clients {
         let out_tx = event_tx;
 
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
-        let (event_tx, event_rx) = mpsc::channel(config.event_channel_bufsize);
+
+        // This channel is only used for shoveling events into the actual event
+        // channel. During normal operations, it should only be blocked if the
+        // event channel is blocked.
+        let (event_tx, event_rx) = mpsc::channel(1);
 
         let task = ClientsTask {
             next_id: 0,

@@ -72,23 +72,9 @@ impl ClientConfig {
 }
 
 /// Config options for [`Clients`](crate::Clients).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 #[non_exhaustive]
 pub struct ClientsConfig {
     /// Server config options.
     pub server: ServerConfig,
-    /// How many client events to buffer.
-    ///
-    /// If the client event channel fills up, clients may stop responding to
-    /// server pings and get disconnected.
-    pub event_channel_bufsize: usize,
-}
-
-impl Default for ClientsConfig {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            event_channel_bufsize: 10,
-        }
-    }
 }
