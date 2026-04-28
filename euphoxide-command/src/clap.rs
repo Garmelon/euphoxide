@@ -130,7 +130,7 @@ where
         let mut args = match parse_quoted_args(arg) {
             Ok(args) => args,
             Err(err) => {
-                ctx.reply_only(err).await?;
+                ctx.reply_only(err)?;
                 return Ok(Propagate::No);
             }
         };
@@ -147,7 +147,7 @@ where
         let args = match C::Args::try_parse_from(args) {
             Ok(args) => args,
             Err(err) => {
-                ctx.reply_only(format!("{}", err.render())).await?;
+                ctx.reply_only(format!("{}", err.render()))?;
                 return Ok(Propagate::No);
             }
         };

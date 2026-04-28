@@ -31,8 +31,7 @@ impl Command<AppData> for Increment {
             *guard
         };
 
-        ctx.reply_only(format!("Counter incremented to {count}"))
-            .await?;
+        ctx.reply_only(format!("Counter incremented to {count}"))?;
         Ok(Propagate::No)
     }
 }
@@ -41,13 +40,13 @@ async fn pyramid(ctx: &AppContext, _arg: &str) -> euphoxide::Result<Propagate> {
     let mut parent = ctx.msg.id;
 
     for _ in 0..3 {
-        let first = ctx.send(Some(parent), "brick").await?;
-        ctx.send_only(Some(parent), "brick").await?;
+        let first = ctx.send(Some(parent), "brick")?;
+        ctx.send_only(Some(parent), "brick")?;
         parent = first.await?.0.id;
         tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
-    ctx.send_only(Some(parent), "brick").await?;
+    ctx.send_only(Some(parent), "brick")?;
     Ok(Propagate::No)
 }
 
@@ -60,8 +59,7 @@ struct AddArgs {
 async fn add(ctx: &AppContext, args: AddArgs) -> euphoxide::Result<Propagate> {
     let result = args.lhs + args.rhs;
 
-    ctx.reply_only(format!("{} + {} = {result}", args.lhs, args.rhs))
-        .await?;
+    ctx.reply_only(format!("{} + {} = {result}", args.lhs, args.rhs))?;
 
     Ok(Propagate::No)
 }

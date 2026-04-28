@@ -102,7 +102,7 @@ where
     async fn execute(&self, ctx: &Context<D, E>, arg: &str) -> Result<Propagate, E> {
         if arg.trim().is_empty() {
             let reply = self.formulate_reply(ctx, false, false);
-            ctx.reply_only(reply).await?;
+            ctx.reply_only(reply)?;
             Ok(Propagate::No)
         } else {
             Ok(Propagate::Yes)
@@ -133,7 +133,7 @@ where
 
     async fn execute(&self, ctx: &Context<D, E>, args: Self::Args) -> Result<Propagate, E> {
         let reply = self.formulate_reply(ctx, args.present, args.connected);
-        ctx.reply_only(reply).await?;
+        ctx.reply_only(reply)?;
         Ok(Propagate::No)
     }
 }

@@ -52,44 +52,42 @@ impl<D, E> Context<D, E> {
     }
 
     /// Send a message to the room the command was received in.
-    pub async fn send(
+    pub fn send(
         &self,
         parent: Option<MessageId>,
         content: impl ToString,
     ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>>> {
-        self.conn
-            .send(api::Send {
-                content: content.to_string(),
-                parent,
-            })
-            .await
+        self.conn.send(api::Send {
+            content: content.to_string(),
+            parent,
+        })
     }
 
     /// Like [`Self::send`], but ignoring the server's reply.
     ///
     /// This saves you from having to write `let _ =` to silence warnings.
-    pub async fn send_only(
+    pub fn send_only(
         &self,
         parent: Option<MessageId>,
         content: impl ToString,
     ) -> euphoxide::Result<()> {
-        let _ignore = self.send(parent, content).await?;
+        let _ignore = self.send(parent, content)?;
         Ok(())
     }
 
     /// Send a reply to the message that triggered the command.
-    pub async fn reply(
+    pub fn reply(
         &self,
         content: impl ToString,
     ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>>> {
-        self.send(Some(self.msg.id), content).await
+        self.send(Some(self.msg.id), content)
     }
 
     /// Like [`Self::reply`], but ignoring the server's reply.
     ///
     /// This saves you from having to write `let _ =` to silence warnings.
-    pub async fn reply_only(&self, content: impl ToString) -> euphoxide::Result<()> {
-        self.send_only(Some(self.msg.id), content).await
+    pub fn reply_only(&self, content: impl ToString) -> euphoxide::Result<()> {
+        self.send_only(Some(self.msg.id), content)
     }
 }
 

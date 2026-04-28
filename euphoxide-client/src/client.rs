@@ -112,7 +112,7 @@ struct ClientTask {
     id: usize,
     config: Arc<ClientConfig>,
 
-    cmd_rx: mpsc::Receiver<Command>,
+    cmd_rx: mpsc::UnboundedReceiver<Command>,
     event_tx: mpsc::Sender<(usize, ClientEvent)>,
 
     attempts: usize,
@@ -316,7 +316,7 @@ impl ClientTask {
 pub struct Client {
     id: usize,
     config: Arc<ClientConfig>,
-    cmd_tx: mpsc::Sender<Command>,
+    cmd_tx: mpsc::UnboundedSender<Command>,
     start_time: Timestamp,
 }
 
@@ -341,7 +341,7 @@ impl Client {
 
         let config = Arc::new(config);
 
-        let (cmd_tx, cmd_rx) = mpsc::channel(1);
+        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
         let task = ClientTask {
             id,
@@ -383,14 +383,14 @@ impl Client {
     }
 
     /// Stop the client.
-    pub async fn stop(&self) {
-        let _ = self.cmd_tx.send(Command::Stop).await;
+    pub fn stop(&self) {
+        let _ = self.cmd_tx.send(Command::Stop);
     }
 
     /// Get a handle to the client's connection, if it is currently connected.
     pub async fn handle(&self) -> Option<ClientConnHandle> {
         let (tx, rx) = oneshot::channel();
-        let _ = self.cmd_tx.send(Command::GetConn(tx)).await;
+        let _ = self.cmd_tx.send(Command::GetConn(tx));
         rx.await.ok()
     }
 }

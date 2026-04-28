@@ -24,7 +24,7 @@ where
     E: From<euphoxide::Error>,
 {
     async fn execute(&self, ctx: &Context<D, E>, _arg: &str) -> Result<Propagate, E> {
-        ctx.reply_only(&self.0).await?;
+        ctx.reply_only(&self.0)?;
         Ok(Propagate::No)
     }
 }

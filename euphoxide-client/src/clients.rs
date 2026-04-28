@@ -17,7 +17,7 @@ struct ClientsTask {
     next_id: usize,
     clients: HashMap<usize, Client>,
 
-    cmd_rx: mpsc::Receiver<Command>,
+    cmd_rx: mpsc::UnboundedReceiver<Command>,
     event_rx: mpsc::Receiver<(usize, ClientEvent)>,
     event_tx: mpsc::Sender<(usize, ClientEvent)>,
     out_tx: mpsc::Sender<(Client, ClientEvent)>,
@@ -77,7 +77,7 @@ impl ClientsTask {
 #[derive(Clone)]
 pub struct Clients {
     config: Arc<ClientsConfig>,
-    cmd_tx: mpsc::Sender<Command>,
+    cmd_tx: mpsc::UnboundedSender<Command>,
     start_time: Timestamp,
 }
 
@@ -101,7 +101,7 @@ impl Clients {
         let config = Arc::new(config);
         let out_tx = event_tx;
 
-        let (cmd_tx, cmd_rx) = mpsc::channel(1);
+        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (event_tx, event_rx) = mpsc::channel(config.event_channel_bufsize);
 
         let task = ClientsTask {
@@ -135,7 +135,7 @@ impl Clients {
     /// Get all currently active clients.
     pub async fn get_clients(&self) -> Vec<Client> {
         let (tx, rx) = oneshot::channel();
-        let _ = self.cmd_tx.send(Command::GetClients(tx)).await;
+        let _ = self.cmd_tx.send(Command::GetClients(tx));
         rx.await.expect("task should still be running")
     }
 
@@ -144,7 +144,7 @@ impl Clients {
     /// The client must have a unique ID.
     pub async fn add_client(&self, config: ClientConfig) -> Client {
         let (tx, rx) = oneshot::channel();
-        let _ = self.cmd_tx.send(Command::AddClient(config, tx)).await;
+        let _ = self.cmd_tx.send(Command::AddClient(config, tx));
         rx.await.expect("task should still be running")
     }
 }

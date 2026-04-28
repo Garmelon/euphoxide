@@ -36,9 +36,6 @@ pub struct ClientConnConfig {
     /// This should only be set if the client is directly acting on behalf of a
     /// human, similar to the web client.
     pub human: bool,
-    /// The size of the [`mpsc::channel`] for communication between
-    /// [`ClientConn`] and [`ClientConnHandle`].
-    pub channel_bufsize: usize,
     /// Timeout for opening a websocket connection.
     pub connect_timeout: Duration,
     /// Timeout for server replies when sending euphoria commands, i.e. packets
@@ -55,7 +52,6 @@ impl Default for ClientConnConfig {
         Self {
             url: "https://euphoria.leet.nu/".to_string(),
             human: false,
-            channel_bufsize: 10,
             connect_timeout: Duration::from_secs(10),
             command_timeout: Duration::from_secs(30),
             ping_interval: Duration::from_secs(30),
@@ -70,8 +66,8 @@ impl Default for ClientConnConfig {
 /// It also provides [`ClientConnHandle`], which can be used to asynchronously
 /// send commands and await their replies.
 pub struct ClientConn {
-    rx: mpsc::Receiver<ConnCommand>,
-    tx: mpsc::Sender<ConnCommand>,
+    rx: mpsc::UnboundedReceiver<ConnCommand>,
+    tx: mpsc::UnboundedSender<ConnCommand>,
 
     conn: Conn,
     state: State,
@@ -255,7 +251,7 @@ impl ClientConn {
         let conn = Conn::wrap_with_config(ws, Side::Client, conn_config);
 
         // Prepare client
-        let (tx, rx) = mpsc::channel(config.channel_bufsize);
+        let (tx, rx) = mpsc::unbounded_channel();
         let client = Self {
             rx,
             tx,
@@ -279,7 +275,7 @@ impl ClientConn {
 /// The handle is cheap to clone.
 #[derive(Debug, Clone)]
 pub struct ClientConnHandle {
-    tx: mpsc::Sender<ConnCommand>,
+    tx: mpsc::UnboundedSender<ConnCommand>,
 }
 
 impl ClientConnHandle {
@@ -292,7 +288,7 @@ impl ClientConnHandle {
     /// When awaited, the *reply future* returns either an error if something
     /// was wrong with the reply, or the data returned by the server. The *reply
     /// future* can be safely ignored and doesn't have to be awaited.
-    pub async fn send<C>(&self, cmd: C) -> Result<impl Future<Output = Result<C::Reply>>>
+    pub fn send<C>(&self, cmd: C) -> Result<impl Future<Output = Result<C::Reply>>>
     where
         C: Command + Into<Data>,
         C::Reply: TryFrom<Data>,
@@ -301,7 +297,6 @@ impl ClientConnHandle {
 
         self.tx
             .send(ConnCommand::SendCmd(cmd.into(), tx))
-            .await
             .map_err(|_| Error::ConnectionClosed)?;
 
         Ok(async {
@@ -329,12 +324,12 @@ impl ClientConnHandle {
     /// ignoring the *reply future*. The reason it exists is that clippy gets
     /// really annoying when you try to ignore a future (which is usually the
     /// right call).
-    pub async fn send_only<C>(&self, cmd: C) -> Result<()>
+    pub fn send_only<C>(&self, cmd: C) -> Result<()>
     where
         C: Command + Into<Data>,
         C::Reply: TryFrom<Data>,
     {
-        let _ignore = self.send(cmd).await?;
+        let _ignore = self.send(cmd)?;
         Ok(())
     }
 
@@ -344,7 +339,6 @@ impl ClientConnHandle {
 
         self.tx
             .send(ConnCommand::GetState(tx))
-            .await
             .map_err(|_| Error::ConnectionClosed)?;
 
         rx.await.map_err(|_| Error::ConnectionClosed)

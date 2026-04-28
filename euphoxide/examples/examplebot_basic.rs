@@ -8,8 +8,7 @@ use euphoxide::{
 async fn set_nick(conn: &ClientConnHandle) -> anyhow::Result<()> {
     conn.send_only(Nick {
         name: "examplebot".to_string(),
-    })
-    .await?;
+    })?;
 
     Ok(())
 }
@@ -18,8 +17,7 @@ async fn send_pong(conn: &ClientConnHandle, msg: Message) -> anyhow::Result<()> 
     conn.send_only(Send {
         content: "Pong!".to_string(),
         parent: Some(msg.id),
-    })
-    .await?;
+    })?;
 
     Ok(())
 }
@@ -28,18 +26,15 @@ async fn send_pyramid(conn: &ClientConnHandle, msg: Message) -> anyhow::Result<(
     let mut parent = msg.id;
 
     for _ in 0..3 {
-        let first = conn
-            .send(Send {
-                content: "brick".to_string(),
-                parent: Some(parent),
-            })
-            .await?;
+        let first = conn.send(Send {
+            content: "brick".to_string(),
+            parent: Some(parent),
+        })?;
 
         conn.send_only(Send {
             content: "brick".to_string(),
             parent: Some(parent),
-        })
-        .await?;
+        })?;
 
         parent = first.await?.0.id;
         tokio::time::sleep(Duration::from_secs(1)).await;
@@ -48,8 +43,7 @@ async fn send_pyramid(conn: &ClientConnHandle, msg: Message) -> anyhow::Result<(
     conn.send_only(Send {
         content: "brick".to_string(),
         parent: Some(parent),
-    })
-    .await?;
+    })?;
 
     Ok(())
 }
