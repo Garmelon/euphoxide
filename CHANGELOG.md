@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+All notable changes to this project will be documented in this file. The format
+is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 Procedure when bumping the version number:
 
@@ -49,8 +49,10 @@ Procedure when bumping the version number:
 - `bot::botrulez::format_duration` now no longer mentions "since" or "ago", but
   instead has a sign (`-`) if the duration is negative.
 
-[tokio-tungstenite README]: https://github.com/snapview/tokio-tungstenite?tab=readme-ov-file#features
-[rustls docs]: https://docs.rs/rustls/0.23.19/rustls/crypto/struct.CryptoProvider.html#using-the-per-process-default-cryptoprovider
+[tokio-tungstenite README]:
+  https://github.com/snapview/tokio-tungstenite?tab=readme-ov-file#features
+[rustls docs]:
+  https://docs.rs/rustls/0.23.19/rustls/crypto/struct.CryptoProvider.html#using-the-per-process-default-cryptoprovider
 
 ### Removed
 
@@ -70,7 +72,8 @@ Procedure when bumping the version number:
 
 ### Changed
 
-- **(breaking)** `bot::instance::ServerConfig::default` now points to `euphoria.leet.nu`
+- **(breaking)** `bot::instance::ServerConfig::default` now points to
+  `euphoria.leet.nu`
 - **(breaking)** Bumped `cookie` dependency from `0.17` to `0.18`
 - **(breaking)** Bumped `tokio-tungstenite` dependency from `0.18` to `0.21`
 - Updated set of emoji names
@@ -88,16 +91,20 @@ Procedure when bumping the version number:
 
 ### Changed
 
-- **(breaking)** `bot::command::ClapCommand::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
-- **(breaking)** `bot::command::Command::execute` now returns a `Result<bool, E>` instead of a `Result<(), E>`
-- **(breaking)** `bot::commands::Commands::handle_packet` now returns a `Result<bool, E>` instead of a `Result<(), E>`
+- **(breaking)** `bot::command::ClapCommand::execute` now returns a
+  `Result<bool, E>` instead of a `Result<(), E>`
+- **(breaking)** `bot::command::Command::execute` now returns a
+  `Result<bool, E>` instead of a `Result<(), E>`
+- **(breaking)** `bot::commands::Commands::handle_packet` now returns a
+  `Result<bool, E>` instead of a `Result<(), E>`
 - **(breaking)** `bot::instance::Snapshot` renamed to `ConnSnapshot`
 - **(breaking)** `conn::Conn::connect` now returns `conn::Result`
 - `bot::instance::Instance` now implements `Clone`
 
 ### Fixed
 
-- **(breaking)** Deserializing empty events and replies by turning unit structs into empty structs
+- **(breaking)** Deserializing empty events and replies by turning unit structs
+  into empty structs
 - `phone` and `mobile` emoji
 - Instances getting stuck in "Connecting" state
 - Euph errors always turning into `conn::Error`s
@@ -119,7 +126,8 @@ Procedure when bumping the version number:
 ### Fixed
 
 - `!uptime` minute count
-- Instance reconnecting after encountering a 404 (it now stops and logs an error)
+- Instance reconnecting after encountering a 404 (it now stops and logs an
+  error)
 - Instance taking too long to stop when stopped during reconnect delay
 
 ## v0.3.0 - 2023-02-11
