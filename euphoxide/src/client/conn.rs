@@ -288,7 +288,7 @@ impl ClientConnHandle {
     /// When awaited, the *reply future* returns either an error if something
     /// was wrong with the reply, or the data returned by the server. The *reply
     /// future* can be safely ignored and doesn't have to be awaited.
-    pub fn send<C>(&self, cmd: C) -> Result<impl Future<Output = Result<C::Reply>>>
+    pub fn send<C>(&self, cmd: C) -> Result<impl Future<Output = Result<C::Reply>> + 'static>
     where
         C: Command + Into<Data>,
         C::Reply: TryFrom<Data>,

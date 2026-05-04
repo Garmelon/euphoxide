@@ -56,7 +56,7 @@ impl<D, E> Context<D, E> {
         &self,
         parent: Option<MessageId>,
         content: impl ToString,
-    ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>>> {
+    ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>> + 'static> {
         self.conn.send(api::Send {
             content: content.to_string(),
             parent,
@@ -79,7 +79,7 @@ impl<D, E> Context<D, E> {
     pub fn reply(
         &self,
         content: impl ToString,
-    ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>>> {
+    ) -> euphoxide::Result<impl Future<Output = euphoxide::Result<SendReply>> + 'static> {
         self.send(Some(self.msg.id), content)
     }
 

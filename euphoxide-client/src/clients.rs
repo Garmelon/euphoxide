@@ -150,7 +150,7 @@ impl Clients {
     ///
     /// It is recommended to use [`Self::add_client_only`] unless you need the
     /// return value.
-    pub fn add_client(&self, config: ClientConfig) -> impl Future<Output = Client> {
+    pub fn add_client(&self, config: ClientConfig) -> impl Future<Output = Client> + 'static {
         let (tx, rx) = oneshot::channel();
         let _ = self.cmd_tx.send(Command::AddClient(config, tx));
         async move { rx.await.expect("task should still be running") }
