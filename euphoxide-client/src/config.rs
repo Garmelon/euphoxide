@@ -44,8 +44,6 @@ pub struct ClientConfig {
     pub server: ServerConfig,
     /// Name of the room to connect to.
     pub room: String,
-    /// Whether the client should identify itself as human.
-    pub human: bool,
     /// Username to set after joining.
     ///
     /// When unset, the client doesn't attempt to set a nick.
@@ -63,7 +61,6 @@ impl ClientConfig {
         Self {
             server,
             room,
-            human: false,
             username: None,
             force_username: false,
             password: None,

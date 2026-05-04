@@ -22,9 +22,9 @@ impl<B> ClientBuilder<B> {
         &mut self.config
     }
 
-    /// Set [`ClientConfig::human`].
+    /// Set [`ClientConnConfig::human`](euphoxide::client::ClientConnConfig::human).
     pub fn with_human(mut self, human: bool) -> Self {
-        self.config.human = human;
+        self.config.server.client.human = human;
         self
     }
 
