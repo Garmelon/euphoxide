@@ -14,12 +14,7 @@ euphoxide-client = { workspace = true }
 jiff = { workspace = true }
 
 [dev-dependencies]
-anyhow = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
-log = { workspace = true }
-rustls = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
-tokio-tungstenite = { workspace = true, features = ["rustls-tls-native-roots"] }
 
 [[example]]
 name = "examplebot_command"

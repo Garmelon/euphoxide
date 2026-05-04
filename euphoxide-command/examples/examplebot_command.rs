@@ -11,7 +11,6 @@ use euphoxide_command::{
     botrulez::{FullHelp, Ping, ShortHelp},
     clap::FromClapHandler,
 };
-use log::error;
 use tokio::sync::mpsc;
 
 struct AppData {
@@ -125,7 +124,7 @@ async fn main() {
         let clients = clients.clone();
         tokio::task::spawn(async move {
             if let Err(err) = commands.handle_event(clients, client, event).await {
-                error!("Oops: {err}")
+                println!("Oops: {err}")
             }
         });
     }
