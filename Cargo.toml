@@ -30,13 +30,13 @@ euphoxide-command = { path = "./euphoxide-command" }
 [workspace.lints]
 rust.unsafe_code = { level = "forbid", priority = 1 }
 # Lint groups
-rust.deprecated-safe = "warn"
-rust.future-incompatible = "warn"
-rust.keyword-idents = "warn"
-rust.nonstandard-style = "warn"
-rust.refining-impl-trait = "warn"
-rust.rust-2018-idioms = "warn"
-rust.unknown-or-malformed-diagnostic-attributes = "warn"
+rust.deprecated_safe = "warn"
+rust.future_incompatible = "warn"
+rust.keyword_idents = "warn"
+rust.nonstandard_style = "warn"
+rust.refining_impl_trait = "warn"
+rust.rust_2018_idioms = "warn"
+rust.unknown_or_malformed_diagnostic_attributes = "warn"
 rust.unused = "warn"
 # Individual lints
 rust.redundant_imports = "warn"
